@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CPU Scheduling Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #eaeaea;
+    }
+    button, select, input {
+      padding: 6px 10px;
+      margin: 5px 0;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .gantt {
+      display: flex;
+      margin-top: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      overflow-x: auto;
+    }
+    .block {
+      border-right: 1px solid #000;
+      padding: 10px;
+      min-width: 60px;
+      text-align: center;
+      background: #d9eaff;
+    }
+  </style>
+</head>
+<body>
+
+<h1>CPU Scheduling Algorithm Simulator</h1>
+
+<table id="processTable">
+  <tr>
+    <th>Process</th>
+    <th>Arrival Time</th>
+    <th>Burst Time</th>
+  </tr>
+  <tr>
+    <td>P1</td>
+    <td><input type="number" value="0"></td>
+    <td><input type="number" value="5"></td>
+  </tr>
+  <tr>
+    <td>P2</td>
+    <td><input type="number" value="1"></td>
+    <td><input type="number" value="3"></td>
+  </tr>
+</table>
+
+<button onclick="addProcess()">Add Process</button>
+
+<div class="controls">
+  <label>Algorithm:</label>
+  <select id="algorithm">
+    <option value="FCFS">FCFS</option>
+    <option value="SJF">SJF</option>
+    <option value="SRTN">SRTN</option>
+    <option value="RR">Round Robin</option>
+  </select>
+
+  <label>Time Quantum:</label>
+  <input type="number" id="quantum" value="2">
+
+  <br><br>
+  <button onclick="run()">Run</button>
+</div>
+
+<h3>Gantt Chart</h3>
+<div class="gantt" id="gantt"></div>
+
+<h3>Calculation Table</h3>
+<table id="resultTable">
+  <tr>
+    <th>Process</th>
+    <th>Arrival Time</th>
+    <th>Burst Time</th>
+    <th>Completion Time (CT)</th>
+    <th>Turnaround Time (TAT)</th>
+    <th>Waiting Time (WT)</th>
+  </tr>
+</table>
+
+<script>
+let processCount = 2;
+
+function addProcess() {
+  processCount++;
+  const table = document.getElementById("processTable");
+  const row = table.insertRow();
+  row.innerHTML = `<td>P${processCount}</td>
+                   <td><input type='number' value='0'></td>
+                   <td><input type='number' value='1'></td>`;
+}
+
+function getProcesses() {
+  const rows = document.querySelectorAll("#processTable tr");
+  let processes = [];
+  for (let i = 1; i < rows.length; i++) {
+    const inputs = rows[i].querySelectorAll("input");
+    const pidText = rows[i].cells[0].innerText.replace("P", "");
+    processes.push({
+      pid: Number(pidText),
+      arrival: Number(inputs[0].value),
+      burst: Number(inputs[1].value)
+    });
+  }
+  return processes;
+}
+
+function drawGantt(chart) {
+  const gantt = document.getElementById("gantt");
+  gantt.innerHTML = "";
+  chart.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "block";
+    div.innerHTML = `P${b.pid}<br>${b.start}-${b.end}`;
+    gantt.appendChild(div);
+  });
+}
+
+function calculateMetrics(processes, chart) {
+  const resultTable = document.getElementById("resultTable");
+  resultTable.innerHTML = `
+    <tr>
+      <th>Process</th>
+      <th>Arrival Time</th>
+      <th>Burst Time</th>
+      <th>Completion Time (CT)</th>
+      <th>Turnaround Time (TAT)</th>
+      <th>Waiting Time (WT)</th>
+    </tr>`;
+
+  processes.forEach(p => {
+    const ct = Math.max(...chart.filter(c => c.pid === p.pid).map(c => c.end));
+    const tat = ct - p.arrival;
+    const wt = tat - p.burst;
+
+    const row = resultTable.insertRow();
+    row.innerHTML = `
+      <td>P${p.pid}</td>
+      <td>${p.arrival}</td>
+      <td>${p.burst}</td>
+      <td>${ct}</td>
+      <td>${tat}</td>
+      <td>${wt}</td>`;
+  });
+}
+
+function drawGantt(chart) {
+  const gantt = document.getElementById("gantt");
+  gantt.innerHTML = "";
+  chart.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "block";
+    div.innerHTML = `P${b.pid}<br>${b.start}-${b.end}`;
+    gantt.appendChild(div);
+  });
+}
+
+function fcfs(processes) {
+  processes.sort((a, b) => a.arrival - b.arrival);
+  let time = 0, chart = [];
+  processes.forEach(p => {
+    let start = Math.max(time, p.arrival);
+    let end = start + p.burst;
+    chart.push({ pid: p.pid, start, end });
+    time = end;
+  });
+  return chart;
+}
+
+function sjf(processes) {
+  let time = 0, chart = [];
+  let remaining = [...processes];
+  while (remaining.length) {
+    let available = remaining.filter(p => p.arrival <= time);
+    if (!available.length) { time++; continue; }
+    available.sort((a, b) => a.burst - b.burst);
+    let p = available[0];
+    chart.push({ pid: p.pid, start: time, end: time + p.burst });
+    time += p.burst;
+    remaining.splice(remaining.indexOf(p), 1);
+  }
+  return chart;
+}
+
+function srtn(processes) {
+  let time = 0, chart = [];
+  let rem = processes.map(p => ({ ...p, r: p.burst }));
+  let current = null;
+  while (rem.some(p => p.r > 0)) {
+    let avail = rem.filter(p => p.arrival <= time && p.r > 0);
+    if (!avail.length) { time++; continue; }
+    avail.sort((a, b) => a.r - b.r);
+    let p = avail[0];
+    if (!current || current.pid !== p.pid)
+      chart.push({ pid: p.pid, start: time, end: time + 1 });
+    else
+      chart[chart.length - 1].end++;
+    p.r--; time++; current = p;
+  }
+  return chart;
+}
+
+function rr(processes, q) {
+  let time = 0, chart = [];
+  let queue = processes.map(p => ({ ...p, r: p.burst }));
+  while (queue.some(p => p.r > 0)) {
+    for (let p of queue) {
+      if (p.r > 0 && p.arrival <= time) {
+        let exec = Math.min(q, p.r);
+        chart.push({ pid: p.pid, start: time, end: time + exec });
+        time += exec; p.r -= exec;
+      }
+    }
+  }
+  return chart;
+}
+
+function run() {
+  const algo = document.getElementById("algorithm").value;
+  const q = Number(document.getElementById("quantum").value);
+  const processes = getProcesses();
+  let chart = [];
+  if (algo === "FCFS") chart = fcfs(processes);
+  if (algo === "SJF") chart = sjf(processes);
+  if (algo === "SRTN") chart = srtn(processes);
+  if (algo === "RR") chart = rr(processes, q);
+  drawGantt(chart);
+  calculateMetrics(processes, chart);
+}
+</script>
+
+</body>
+</html>
