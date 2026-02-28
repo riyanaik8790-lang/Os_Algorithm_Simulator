@@ -63,6 +63,9 @@ This project demonstrates core OS concepts like CPU Scheduling, Disk Scheduling,
 
 No additional installation required.
 
+## 🌐 Live Demo
+
+👉 [Click here to view the project](https://riyanaik8790-lang.github.io/Os_Algorithm_Simulator/)
 
 ## 🎯 Project Objective
 
