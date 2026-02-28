@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Page Replacement Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ================= MODERN TECH-GLASS UI ================= */
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e0e0e0;
+  background: #0d1117;
+}
+
+/* ================= FLOWING BACKGROUND ================= */
+.animated-bg {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Floating particles */
+.particle {
+  position: fixed;
+  width: 3px;
+  height: 3px;
+  background: rgba(88,166,255,1);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(88,166,255,1);
+  animation: roam linear infinite;
+  z-index: 1;
+  opacity: 0.6;
+
+}
+
+/* ================= ANIMATIONS ================= */
+@keyframes cpuFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes signalMove {
+  from { background-position: 0 0; }
+  to   { background-position: 400px 400px; }
+}
+
+@keyframes roam {
+  0% { transform: translate(0, 0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { 
+    transform: translate(
+      calc(-200px + 400px * var(--x)), 
+      calc(-200px + 400px * var(--y))
+    ); 
+    opacity: 0; 
+  }
+}
+
+/* ================= CONTAINER ================= */
+.container {
+  max-width: 1000px;
+  margin: 50px auto;
+  padding: 40px 35px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 0 50px rgba(88, 166, 255, 0.2),
+    inset 0 0 25px rgba(255, 255, 255, 0.05);
+    
+}
+
+/* ================= HEADINGS ================= */
+h1 {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #7dd3fc;
+  font-weight: 800;
+  font-size: 2.2rem;
+  letter-spacing: 0.5px;
+}
+
+/* ================= FORM ================= */
+label {
+  color: #3abff8;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+input:focus, select:focus {
+  border-color: #26a9f6;
+  background: rgba(255,255,255,0.12);
+  outline: none;
+}
+
+/* Compact controls (Frames + Algorithm) */
+.form-grid .compact-input,
+.form-grid .algo-select {
+  width: 180px;
+  max-width: 180px;
+  justify-self: start;
+}
+
+/* ================= BUTTON ================= */
+button {
+  width: 220px;
+  padding: 14px 0;
+  font-size: 16px;
+  background: linear-gradient(135deg, #2d86dd, #0674f1);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgb(13 14 15 / 60%);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px #0558b1;
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 15px #033070;
+}
+
+/* Highlight selected algorithm in complexity table */
+.highlight-row {
+  background: rgba(56, 189, 248, 0.4) !important; /* semi-transparent blue glow */
+  color: #ffffff;
+  font-weight: 700;
+  transition: background 0.3s ease;
+}
+
+/* ================= TABLE ================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(88,166,255,0.15);
+}
+
+table th {
+  background: #063780;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 12px;
+}
+
+table td {
+  background: rgba(0,0,0,0.55);
+  color: #e0e0e0;
+  text-align: center;
+  padding: 10px;
+  transition: 0.3s ease;
+}
+
+table tr:nth-child(even) td {
+  background: rgba(15,23,42,0.65);
+}
+
+table tr:hover td {
+  background: rgba(3, 66, 137, 0.25);
+}
+
+.table-heading {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #7dd3fc;
+  margin: 25px 0 15px;
+}
+
+/* ================= RESULTS ================= */
+.result {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 18px;
+  color: #7dd3fc;
+  font-weight: bold;
+}
+
+/* ================= HIT/FAULT COLORS ================= */
+.hit { color: #22c55e; font-weight: bold; }
+.fault { color: #ef4444; font-weight: bold; }
+
+/* ================= SELECT BOX ================= */
+select {
+  background: #1e293b;
+  color: #fff;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+}
+
+select option {
+  background: #1e293b;
+  color: #fff;
+}
+ 
+.form-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  row-gap: 28px;
+  column-gap: 12px;
+  align-items: center;
+  width:240px;
+    margin: 0 auto;       
+  width: fit-content;  
+}
+
+.form-grid input {
+  width: 100%;
+  max-width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(58,191,248,0.5);
+  border-radius: 10px;
+  color: #e0e0e0;
+  box-sizing: border-box;
+}
+
+/* Algorithm dropdown (smaller & clean) */
+.algo-select {
+  width: 180px;             
+  padding: 12px 14px;
+  font-weight: 600;
+  background: #1e293b;
+  border-radius: 10px;
+  border: 1px solid #38bdf8;
+  max-width: 180px;
+  justify-self: start;
+  letter-spacing: 0.5px;
+}
+
+/* Center buttons nicely */
+.button-row {
+  margin-top: 30px;
+  text-align: center 
+}
+
+.info-section {
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 30px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #0f1b2d, #0a1624);
+  border: 1px solid rgba(88,166,255,0.2);
+  box-shadow: 0 0 25px rgba(88,166,255,0.08);
+}
+
+.info-section h2 {
+  color: #7dd3fc;
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.info-section p,
+.info-section li {
+  color: #cbd5e1;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+body > h1 {
+  margin-top: 50px;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 50px auto;
+}
+
+.interpretation {
+  margin-top: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.analysis-container {
+  margin-top: 25px;
+  padding: 25px;
+  background: rgba(15,23,42,0.7);
+  border-radius: 14px;
+  border: 1px solid rgba(56,189,248,0.3);
+  box-shadow: 0 0 20px rgba(56,189,248,0.15);
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.analysis-container h3 {
+  color: #7dd3fc;
+  margin-bottom: 10px;
+}
+
+.analysis-container ul {
+  padding-left: 20px;
+}
+
+.button-group {
+  display: inline-flex; /* Makes group shrink to content */
+  gap: 10px;  
+}
+
+/* ===== RESULT CARD DESIGN ===== */
+
+.result-card {
+  margin-top: 30px;
+  padding: 25px;
+  background: rgba(15,23,42,0.8);
+  border-radius: 18px;
+  border: 1px solid rgba(56,189,248,0.3);
+  box-shadow: 0 0 25px rgba(56,189,248,0.15);
+}
+
+.result-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.stat-box {
+  background: rgba(30,41,59,0.8);
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid rgba(56,189,248,0.2);
+}
+
+.stat-box h4 {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.stat-box p {
+  font-size: 22px;
+  font-weight: bold;
+  color: #7dd3fc;
+}
+
+.formula-box {
+  margin-top: 25px;
+  padding: 15px;
+  background: rgba(2,132,199,0.15);
+  border-radius: 12px;
+}
+
+.formula-box h4 {
+  margin-bottom: 8px;
+  color: #38bdf8;
+}
+
+.interpret-box {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(34,197,94,0.08);
+  border-left: 4px solid #2279c5;
+  border-radius: 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="animated-bg" id="bg">
+
+  <h1>Page Replacement Simulator</h1>
+
+  <div class="info-section">
+  <h2>What is Page Replacement?</h2>
+  <p>
+    Page Replacement is a memory management technique used by the Operating System 
+    to decide which page should be removed from memory when new pages need to be loaded.
+    It helps improve memory utilization and reduce page faults.
+  </p>
+</div>
+
+<div class="info-section">
+  <h2>How to Use ?</h2>
+  <ol>
+    <li>
+      Enter the <b>Reference String</b> (comma-separated numbers).  
+      Example: <code>7,0,1,2,0,3,0,4</code>
+    </li>
+    <li>
+      Enter the <b>Number of Frames</b> (available memory slots).  
+      Example: <code>3</code>
+    </li>
+    <li>
+      Select a <b>Page Replacement Algorithm</b>:
+    </li>
+    <li>Click <b>Run Simulation</b>.</li>
+    <li>
+      Click <b>Restart</b> to clear inputs and run again.
+    </li>
+  </ol>
+</div>
+
+
+  <div class="container">
+
+   <div class="form-grid">
+
+  <label>Reference String</label>
+  <input id="ref" placeholder="e.g. 7,0,1,2,0,3,0,4">
+
+  <label>Number of Frames</label>
+  <input id="frames" type="text" placeholder="e.g. 3" class="compact-input">
+  
+  <label>Algorithm</label>
+  <select id="algo" class="algo-select">
+    <option value="FIFO">FIFO</option>
+    <option value="LRU">LRU</option>
+    <option value="OPT">OPTIMAL</option>
+  </select>
+  <small id="algo-desc" style="color:#94a3b8;"></small>
+
+</div>
+
+    <div class="button-row">
+      <div class="button-group">
+  <button onclick="run()">Run Simulation</button>
+  <button onclick="restart()" style="
+  background: transparent;
+  border: 1.5px solid #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56,189,248,0.25);
+">
+    Restart
+  </button>
+  <button onclick="loadExample()" style="
+   background:linear-gradient(90deg,#10b981,#06b6d4);
+  color:white;
+">
+  Load Example
+</button>
+  </div>
+</div>
+
+    <div id="table"></div>
+ <div class="result" id="result"></div>
+ <div id="analysis-container" class="analysis-container" style="display:none;">
+</div>
+ <div class="info-section" id="terms-section" style="display:none;">
+  <h2>Key Terms Explained</h2>
+  <ul>
+    <li><b>Page:</b> A block of memory referenced by the CPU.</li>
+    <li><b>Frame:</b> A fixed-size slot in physical memory that holds a page.</li>
+    <li><b>Page Fault:</b> Occurs when the required page is not found in memory.</li>
+    <li><b>Hit:</b> Occurs when the required page is already present in memory.</li>
+    <li><b>Page Fault Rate (PFR):</b> Faults ÷ Total References.</li>
+    <li><b>Reference String:</b> Sequence of page requests made by CPU.</li>
+  </ul>
+</div>
+
+  </div>
+
+<div class="complexity-section" id="tc-section" style = "display:none;">
+  <p class="table-heading">Time Complexity Comparison</p>
+  <div id="complexity"></div>
+</div>
+
+</div>
+
+<script>
+
+/* ===== Floating Particles ===== */
+const bg = document.getElementById("bg");
+
+for (let i = 0; i < 40; i++) {
+  const p = document.createElement("div");
+  p.className = "particle";
+
+  // RANDOM start position across FULL screen
+  p.style.top = Math.random() * 100 + "vh";
+  p.style.left = Math.random() * 100 + "vw";
+
+  // RANDOM movement direction
+  p.style.setProperty("--x", Math.random());
+  p.style.setProperty("--y", Math.random());
+
+  p.style.animationDuration = 10 + Math.random() * 20 + "s";
+
+  bg.appendChild(p);
+}
+
+function updateAlgoDescription() {
+  const selected = document.getElementById("algo").value;
+  document.getElementById("algo-desc").innerText = algoDescriptions[selected];
+}
+
+function loadExample() {
+
+  const selectedAlgo = document.getElementById("algo").value;
+
+  let exampleRef = "";
+  let exampleFrames = "3";
+
+  if (selectedAlgo === "FIFO") {
+    exampleRef = "1,2,3,4,1,2,5,1,2,3,4,5";
+  }
+  else if (selectedAlgo === "LRU") {
+    exampleRef = "7,0,1,2,0,3,0,4,2,3,0,3,2";
+  }
+  else if (selectedAlgo === "OPT") {
+    exampleRef = "2,3,2,1,5,2,4,5,3,2,5,2";
+  }
+
+  document.getElementById("ref").value = exampleRef;
+  document.getElementById("frames").value = exampleFrames;
+
+  updateAlgoDescription();
+}
+
+function run() {
+
+  const refInput = document.getElementById("ref").value.trim();
+  const framesInput = document.getElementById("frames").value.trim();
+  const algo = document.getElementById("algo").value;
+
+  // ===== INPUT VALIDATION =====
+  if (refInput === "" || framesInput === "") {
+    alert("Please fill all input fields before running the simulation.");
+    return;
+  }
+
+  const ref = refInput.split(",").map(Number);
+
+  if (ref.some(isNaN)) {
+    alert("Reference string must contain only numbers separated by commas.");
+    return;
+  }
+
+  const f = Number(framesInput);
+
+  if (f <= 0) {
+    alert("Number of frames must be greater than 0.");
+    return;
+  }
+
+  const algoDescriptions = {
+  FIFO: "FIFO (First In First Out): Replaces the oldest loaded page.",
+  LRU: "LRU (Least Recently Used): Replaces the page not used for longest time.",
+  OPT: "Optimal: Replaces the page that will not be used for longest time in future."
+};
+
+  // ===== PAGE REPLACEMENT LOGIC =====
+  let frames = [];
+  let faults = 0, hits = 0;
+  let rows = [];
+
+  ref.forEach((page, index) => {
+    let fault = "No";
+
+    if (!frames.includes(page)) {
+      faults++;
+      fault = "Yes";
+
+      if (frames.length < f) {
+        frames.push(page);
+      } else {
+        let replaceIndex = 0;
+
+        if (algo === "FIFO") {
+          replaceIndex = 0;
+        }
+        else if (algo === "LRU") {
+          let past = frames.map(p =>
+            ref.slice(0, index).lastIndexOf(p)
+          );
+          replaceIndex = past.indexOf(Math.min(...past));
+        }
+        else if (algo === "OPT") {
+          let future = frames.map(p => {
+            let idx = ref.slice(index + 1).indexOf(p);
+            return idx === -1 ? Infinity : idx;
+          });
+          replaceIndex = future.indexOf(Math.max(...future));
+        }
+
+        frames[replaceIndex] = page;
+      }
+    } else {
+      hits++;
+    }
+
+    rows.push({ page, frames: [...frames], fault });
+  });
+
+  const pfr = (faults / ref.length).toFixed(2);
+
+  let interpretation = "";
+const numericPFR = faults / ref.length;
+
+// Performance-based insight
+if (numericPFR === 0) {
+  interpretation = "No page faults occurred. All pages were already available in memory.";
+}
+else if (numericPFR < 0.3) {
+  interpretation = "Low page fault rate. Memory utilization is highly efficient.";
+}
+else if (numericPFR < 0.6) {
+  interpretation = "Moderate page fault rate. The algorithm handles this workload reasonably well.";
+}
+else {
+  interpretation = "High page fault rate. This algorithm may not be optimal for the given reference pattern.";
+}
+
+// Algorithm-specific insight
+if (algo === "FIFO") {
+  interpretation += " FIFO replaces pages based only on arrival order and does not consider usage frequency.";
+}
+else if (algo === "LRU") {
+  interpretation += " LRU replaces the least recently used page, adapting better to temporal locality.";
+}
+else if (algo === "OPT") {
+  interpretation += " Optimal gives the theoretical minimum faults and serves as a benchmark for comparison.";
+}
+
+// Frame insight
+if (f <= 2) {
+  interpretation += " Fewer frames increase memory pressure and replacement frequency.";
+}
+else if (f >= ref.length / 2) {
+  interpretation += " Larger frame allocation reduces page replacements significantly.";
+}
+let algoDefinition = "";
+
+if (algo === "FIFO") {
+  algoDefinition = "FIFO (First In First Out) replaces the page that has been in memory for the longest time.";
+}
+else if (algo === "LRU") {
+  algoDefinition = "LRU (Least Recently Used) replaces the page that was not used for the longest time in the past.";
+}
+else if (algo === "OPT") {
+  algoDefinition = "Optimal replaces the page that will not be used for the longest time in the future.";
+}
+
+// Step-by-step explanation
+let stepsHTML = "<ul>";
+
+rows.forEach((step, i) => {
+  if (step.fault === "Yes") {
+    stepsHTML += `
+      <li>
+        Step ${i + 1}: Page ${step.page} caused a PAGE FAULT.
+        Frames became [${step.frames.join(", ")}]
+      </li>
+    `;
+  } else {
+    stepsHTML += `
+      <li>
+        Step ${i + 1}: Page ${step.page} was a HIT.
+        Frames remained [${step.frames.join(", ")}]
+      </li>
+    `;
+  }
+});
+
+stepsHTML += "</ul>";
+
+document.getElementById("result").innerHTML = `
+<div class="result-card">
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <h4>Total Page Faults</h4>
+      <p>${faults}</p>
+    </div>
+
+    <div class="stat-box">
+      <h4>Total Hits</h4>
+      <p>${hits}</p>
+    </div>
+
+    <div class="stat-box">
+      <h4>Total References</h4>
+      <p>${ref.length}</p>
+    </div>
+
+    <div class="stat-box">
+      <h4>Page Fault Rate</h4>
+      <p>${pfr}</p>
+    </div>
+  </div>
+
+  <div class="formula-box">
+    <h4>PFR Formula</h4>
+    <p><b>PFR = Total Page Faults / Total References</b></p>
+    <p>= ${faults} / ${ref.length} = <b>${pfr}</b></p>
+  </div>
+
+  <div class="interpret-box">
+    <h4>Interpretation</h4>
+    <p>${interpretation}</p>
+  </div>
+
+</div>
+`;
+
+const analysisDiv = document.getElementById("analysis-container");
+
+analysisDiv.innerHTML = `
+  <h3>Algorithm Definition</h3>
+  <p>${algoDefinition}</p>
+
+  <h3>Step-by-Step Execution</h3>
+  ${stepsHTML}
+`;
+
+analysisDiv.style.display = "block";
+
+  renderTable(rows, f);
+
+  document.getElementById("tc-section").style.display = "block";
+
+  // ===== SHOW ONLY SELECTED TIME COMPLEXITY =====
+  const table = document.getElementById("complexity-table");
+  const tcRows = table.querySelectorAll("tr[data-algo]");
+
+  table.style.display = "table";
+
+  tcRows.forEach(row => {
+    row.style.display = "none";
+    row.classList.remove("highlight-row");
+  });
+
+  tcRows.forEach(row => {
+    if (row.dataset.algo === algo) {
+      row.style.display = "table-row";
+      row.classList.add("highlight-row");
+    }
+  });
+  document.getElementById("terms-section").style.display = "block";
+
+}
+
+function restart() {
+  // Reset inputs
+  document.getElementById("ref").value = "";
+  document.getElementById("frames").value = "";
+  document.getElementById("algo").value = "FIFO";
+
+  // Clear output
+  document.getElementById("table").innerHTML = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("complexity").innerHTML = "";
+
+  // Hide TC section again
+  document.getElementById("tc-section").style.display = "none";
+
+  document.getElementById("analysis-container").style.display = "none";
+document.getElementById("analysis-container").innerHTML = "";
+document.getElementById("terms-section").style.display = "none";
+
+}
+
+/* ===== TABLE RENDERING (OUTSIDE run) ===== */
+
+function renderTable(rows, f) {
+  let html = `
+  <p class="table-heading">Page Replacement Result Table</p>
+  <table>
+`;
+
+  /* Reference string row */
+  html += `<tr>
+    <th title="Sequence of page requests made by CPU">Reference</th>`;
+  rows.forEach(r => html += `<th>${r.page}</th>`);
+  html += "</tr>";
+
+  /* Frame rows */
+  for (let i = f - 1; i >= 0; i--) {
+    html += `<tr>
+      <th title="Memory slot that holds a page">Frame ${f - i}</th>`;
+    rows.forEach(r => {
+      html += `<td>${r.frames[i] ?? "–"}</td>`;
+    });
+    html += "</tr>";
+  }
+
+  /* Hit / Fault row */
+  html += `<tr>
+    <th title="Hit (H) means page found, Fault (F) means page not found">Result</th>`;
+  rows.forEach(r => {
+    html += `<td class="${r.fault === "No" ? "hit" : "fault"}">
+      ${r.fault === "No" ? "H" : "F"}
+    </td>`;
+  });
+  html += "</tr>";
+
+  html += "</table>";
+
+  document.getElementById("table").innerHTML = html;
+}
+
+function renderComplexityTable() {
+  const html = `
+<table id="complexity-table">
+  <tr>
+    <th>Algorithm</th>
+    <th>Time Complexity</th>
+    <th>Space Complexity</th>
+  </tr>
+  <tr data-algo="FIFO">
+    <td>FIFO</td>
+    <td>O(n)</td>
+    <td>O(f)</td>
+  </tr>
+  <tr data-algo="LRU">
+    <td>LRU</td>
+    <td>O(n × f)</td>
+    <td>O(f)</td>
+  </tr>
+  <tr data-algo="OPT">
+    <td>Optimal</td>
+    <td>O(n² × f)</td>
+    <td>O(f)</td>
+  </tr>
+</table>
+`;
+  document.getElementById("complexity").innerHTML = html;
+}
+
+// Highlight the complexity row based on selected algorithm
+const algoSelect = document.getElementById("algo");
+
+algoSelect.addEventListener("change", () => {
+  const selectedAlgo = algoSelect.value;
+  const rows = document.querySelectorAll("#complexity-table tr");
+
+  rows.forEach(row => {
+    if (row.dataset.algo === selectedAlgo) {
+      row.classList.add("highlight-row");
+    } else {
+      row.classList.remove("highlight-row");
+    }
+  });
+});
+
+// Optional: trigger highlight on page load
+algoSelect.dispatchEvent(new Event("change"));
+
+renderComplexityTable();
+
+algoSelect.addEventListener("change", updateAlgoDescription);
+updateAlgoDescription();
+
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPU Scheduling Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background: #000;
+}
+
+/* ============== ROOT THEME ============== */
+:root {
+  --bg-main: #0d1117;
+  --bg-card: #161b22;
+  --bg-soft: #1f2630;
+  --accent: #58a6ff;
+  --accent-soft: #2f81f7;
+  --text-main: #e6edf3;
+  --text-muted: #9ba3b4;
+  --border: #30363d;
+  --idle: #8b949e;
+}
+
+/* ============== BODY ============== */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+               'Helvetica Neue', Arial, sans-serif;
+  color: #e6edf3;
+  line-height: 1.55;
+}
+
+/* ================= FLOWING CPU SIGNAL ANIMATED BACKGROUND ================= */
+.animated-bg {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #0d1117;
+}
+
+/* Primary moving gradient layer */
+.animated-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(88,166,255,0.18), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(56,189,248,0.15), transparent 45%),
+    linear-gradient(120deg, #0d1117, #0b1d2d, #161b22);
+  background-size: 300% 300%;
+  animation: cpuFlow 12s ease-in-out infinite alternate;
+  z-index: -2;
+}
+
+/* Moving light grid / signal lines */
+.animated-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(88,166,255,0.03),
+      rgba(88,166,255,0.03) 2px,
+      transparent 6px,
+      transparent 14px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(56,189,248,0.03),
+      rgba(56,189,248,0.03) 2px,
+      transparent 6px,
+      transparent 14px
+    );
+  animation: signalMove 15s linear infinite;
+  opacity: 0.35;
+  z-index: -1;
+}
+
+/* Floating particles layer */
+.animated-bg .particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(88, 166, 255, 0.6);
+  border-radius: 50%;
+  animation: floatParticles linear infinite;
+}
+
+@keyframes cpuFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes signalMove {
+  from { background-position: 0 0; }
+  to   { background-position: 400px 400px; }
+}
+
+@keyframes floatParticles {
+  0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(-10vh) translateX(200px); opacity: 0; }
+}
+
+
+/* ============== HEADINGS ============== */
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+    font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #f0f6fc;
+}
+
+h2 {
+   font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #f0f6fc;
+  margin-bottom: 16px;
+  border-left: 4px solid var(--accent);
+  padding-left: 10px;
+}
+
+/* ============== CARD ============== */
+.card {
+  background: linear-gradient(180deg, var(--bg-card), #0f141b);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 30px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  border: 1px solid var(--border);
+}
+
+/* ============== TABLE ============== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  font-size: 0.95rem;
+}
+
+th {
+  background: #0b1d2d;
+  color: var(--accent);
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:nth-child(even) td {
+  background: #0f1722;
+}
+
+/* ============== INPUTS ============== */
+input {
+  width: 70px;
+  padding: 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text-main);
+  text-align: center;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+/* Remove arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* ============== BUTTONS ============== */
+button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-weight: 500;
+  background: linear-gradient(180deg, #21262d, #161b22);
+  color: var(--text-main);
+  transition: all 0.25s ease;
+  font-family: inherit;
+
+}
+
+button:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Primary button */
+button[onclick="run()"] {
+  background: linear-gradient(180deg, var(--accent), #1f6feb);
+  color: #ffffff;
+  border: none;
+  margin: 20px auto;
+  display: block;
+  width: 170px;
+  font-weight: 600;
+}
+
+button[onclick="run()"]:hover {
+  filter: brightness(1.1);
+}
+
+/* Process buttons */
+#processButtons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+/* ============== SELECT & OPTIONS ============== */
+select, #qt {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text-main);
+}
+
+/* ============== ALGO DEFINITION ============== */
+#algoDefinition {
+  background: linear-gradient(180deg, #0b1d2d, #0f1722);
+  color: var(--text-muted);
+}
+
+/* ============== GANTT CHART ============== */
+.gantt {
+  display: flex;
+  padding: 14px;
+  background: #0b1d2d;
+  border-radius: 14px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+}
+
+.perf-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  height: 220px;
+  padding: 20px;
+  background: #0b1d2d;
+  border-radius: 12px;
+}
+
+.bar {
+  width: 60px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-weight: 600;
+  color: #fff;
+}
+
+.bar span {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.bar-label {
+  text-align: center;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.block {
+  flex-shrink: 0;
+  padding: 10px;
+  margin-right: 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  background: linear-gradient(180deg, #1f6feb, #1158c7);
+  color: #ffffff;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3);
+}
+
+.block:nth-child(even) {
+  background: linear-gradient(180deg, #2f81f7, #1f6feb);
+}
+
+.idle {
+  background: linear-gradient(180deg, #30363d, #21262d) !important;
+  color: var(--idle);
+  font-style: italic;
+}
+
+/* ============== COMPLEXITY HIGHLIGHT ============== */
+.highlight-algo {
+  background: linear-gradient(90deg, #0b1d2d, #0f1722);
+  border-left: 6px solid var(--accent);
+  font-weight: 600;
+}
+
+.highlight-algo td {
+  color: var(--accent);
+}
+
+/* Hybrid Mode Background for the animated area */
+.hybrid-bg {
+  background: linear-gradient(135deg, #000000, #010b1c) !important;
+  transition: background 0.5s ease;
+}
+
+/* Center instructions */
+#userInstructions.hybrid {
+  max-width: 100%;
+  margin: 20px auto;
+  text-align: left;
+  padding: 15px;
+  transition: all 0.5s ease;
+}
+
+</style>
+</head>
+
+<body>
+<div class="animated-bg">
+  <div class="content">
+<h1>CPU Scheduling Simulator</h1>
+
+<div class="card">
+  <h2>What is CPU Scheduling?</h2>
+  <p style="color:#9ba3b4;font-size:14px;">
+    CPU Scheduling is a process used by the Operating System to decide 
+    which process gets the CPU next. Since only one process can use the 
+    CPU at a time, scheduling algorithms ensure fairness and efficiency.
+  </p>
+</div>
+
+<div class="card" id = "userInstructions">
+  <h2>How to Use</h2>
+  <ul style="color:#9ba3b4;font-size:14px;">
+    <li>Enter Arrival Time and Burst Time for each process.</li>
+    <li>Select a Scheduling Algorithm.</li>
+    <li>If using Round Robin, enter Time Quantum.</li>
+    <li>If using Priority, set priority as Lower=Higher or Higher=Higher.</li>
+      <ul style="color:#9ba3b4;font-size:14px;">
+    <li>Lower=Higher represents smaller number → higher priority </li>
+    <li>Higher=Higher represents larger number → higher priority </li> 
+    </ul>
+     <li><strong>Optional:</strong> Hybrid scheduling (multiple algorithms in one simulation) is not active by default. It will be available if the user selects the "Hybrid Mode" option.</li>
+    <li>Click Run Simulation.</li>
+  </ul>
+</div>
+
+<!-- ================= PROCESS TABLE ================= -->
+
+  <h2>Process Table</h2>
+  <table id="ptable">
+
+    <tr>
+      <th title ="Process ID">Process</th>
+      <th title="Time at which process enters the Ready Queue">Arrival Time </th>
+      <th title="Total CPU time required to complete the process">Burst Time</th>
+      <th class="priority-col"
+        title="Priority level of process (depends on selected rule)">Priority</th>
+    </tr>
+    <tr>
+      <td>P1</td>
+      <td><input placeholder="0"></td>
+      <td><input placeholder="5"></td>
+      <td class="priority-col"><input placeholder="2"></td>
+    </tr>
+    <tr>
+      <td>P2</td>
+      <td><input placeholder="1"></td>
+      <td><input placeholder="3"></td>
+      <td class="priority-col"><input placeholder="1"></td>
+    </tr>
+  </table>
+
+  <div id="processButtons">
+    <button onclick="addProcess()">Add Process</button>
+    <button onclick="removeProcess()">Remove Process</button>
+    <button id="resetBtn" onclick="resetPage()">Reset</button>
+    <button onclick="loadExample()">Load Example</button>
+  </div>
+
+  <div style="text-align:center;margin-top:15px;">
+    Algorithm:
+    <select id="algo" onchange="toggleInputs()">
+      <option value="FCFS">FCFS</option>
+      <option value="SJF">SJF</option>
+      <option value="SRTN">SRTN</option>
+      <option value="PNP">Priority (NP)</option>
+      <option value="PP">Priority (P)</option>
+      <option value="RR">Round Robin</option>
+    </select>
+
+    <span id="priorityRuleBox">
+      Priority Rule:
+      <select id="prule">
+        <option value="LOW">Lower = Higher</option>
+        <option value="HIGH">Higher = Higher</option>
+      </select>
+    </span>
+
+    <span id="quantumBox">
+      Quantum:
+      <input id="qt" placeholder="2">
+    </span>
+  </div>
+   
+   <div style="text-align:center;margin-top:10px;">
+  <label style="cursor:pointer; font-weight:500; font-size:14px;">
+    <input type="checkbox" id="hybridMode"> Enable Hybrid Scheduling (Advanced)
+  </label>
+</div>
+
+  <button onclick="run()">Run Simulation</button>
+
+</div>
+
+<p id="algoDefinition" style="
+  background:#f4f9ff;
+  padding:12px;
+  border-left:5px solid #3498db;
+  border-radius:6px;
+  display:none;
+  font-size:14px;
+  color:#2c3e50;
+">
+</p>
+ 
+<!-- ================= GANTT ================= -->
+<div class="card" id="ganttCard" style="display:none">
+ 
+  <h2>Gantt Chart</h2>
+
+  <div style="margin-top:10px;color:#9ba3b4;font-size:13px;">
+  <b>Legend:</b> Blue = Running Process | Grey = CPU Idle
+</div>
+
+  <div class="gantt" id="gantt"></div>
+
+   <div id="ganttExplanation" style="
+  margin-top:15px;
+  color:#9ba3b4;
+  font-size:14px;
+"></div>
+
+</div>
+
+<!-- ================= RESULT ================= -->
+<div class="card" id="resultCard" style="display:none">
+  <h2>Result Table</h2>
+  <table id="result"></table>
+  <div id="extraMetrics" style="margin-top:15px;font-weight:600;"></div>
+<div id="resultExplanation" style="
+  margin-top:15px;
+  color:#9ba3b4;
+  font-size:14px;
+"></div>
+
+</div>
+ <div class="card" id="perfCard" style="display:none">
+
+  <h2>Performance Analysis</h2>
+
+  <div style="margin-bottom:10px;text-align:center">
+    <button onclick="showWT()">Waiting Time</button>
+    <button onclick="showTAT()">Turnaround Time</button>
+    <button onclick="showThroughput()">Throughput</button>
+  </div>
+
+  <div id="perfChart" class="perf-chart"></div>
+
+  <div id="graphExplanation" style="
+  margin-top:15px;
+  color:#9ba3b4;
+  font-size:14px;
+"></div>
+
+</div>
+
+<!-- ================= COMPLEXITY ================= -->
+<div class="card" id="complexityCard" style="display:none">
+  <h2>Time & Space Complexity</h2>
+  <table id="complexityTable">
+    <tr>
+      <th>Algorithm</th>
+      <th title = "Time Complexity measures how the running time of an algorithm grows as the input size increases.">Time Complexity</th>
+      <th title = "Space Complexity measures how much extra memory an algorithm uses as input size increases.">Space Complexity</th>
+    </tr>
+  </table>
+</div>
+
+  </div>
+</div>
+
+<script> 
+ const TIME_UNIT = 35; // px per 1 time unit (adjust if needed)
+let systemThroughput = 0;
+
+  // Add floating particles
+for(let i=0;i<40;i++){
+  let p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random()*100+'vw';
+  p.style.top = Math.random()*100+'vh';
+  p.style.animationDuration = 5 + Math.random()*10 + 's';
+  document.querySelector('.animated-bg').appendChild(p);
+}
+
+ const ptable = document.getElementById("ptable");
+const gantt = document.getElementById("gantt");
+const result = document.getElementById("result");
+const algo = document.getElementById("algo");
+const qt = document.getElementById("qt");
+
+let pc=2;
+
+function addProcess() {
+  pc++;
+
+  const row = ptable.insertRow(-1);
+
+  // Process name
+  const c1 = row.insertCell(0);
+  c1.innerText = "P" + pc;
+
+  // Arrival Time
+  const c2 = row.insertCell(1);
+  const at = document.createElement("input");
+  at.type = "number";
+  at.placeholder = "0";
+  c2.appendChild(at);
+
+  // Burst Time
+  const c3 = row.insertCell(2);
+  const bt = document.createElement("input");
+  bt.type = "number";
+  bt.placeholder = "0";
+  c3.appendChild(bt);
+
+  // Priority
+  const c4 = row.insertCell(3);
+  c4.classList.add("priority-col");
+  const pr = document.createElement("input");
+  pr.type = "number";
+  pr.placeholder = "0";
+  c4.appendChild(pr);
+
+  //  IMPORTANT: If hybrid mode is ON, add extra columns
+if (hybridCheckbox.checked) {
+
+  // -------- Queue Column --------
+  const queueCell = row.insertCell(-1);
+  queueCell.classList.add("hybrid-queue-col");
+
+  const selectQueue = document.createElement("select");
+
+  let opt1 = document.createElement("option");
+  opt1.value = "1";
+  opt1.innerText = "Q1 (Priority)";
+  selectQueue.appendChild(opt1);
+
+  let opt2 = document.createElement("option");
+  opt2.value = "2";
+  opt2.innerText = "Q2 (FCFS)";
+  selectQueue.appendChild(opt2);
+
+  queueCell.appendChild(selectQueue);
+
+
+  // -------- Priority Column --------
+  const priorityCell = row.insertCell(-1);
+  priorityCell.classList.add("hybrid-priority-col");
+
+  const priorityInput = document.createElement("input");
+  priorityInput.type = "number";
+  priorityInput.min = "1";
+  priorityInput.placeholder = "Priority";
+
+  priorityCell.appendChild(priorityInput);
+
+
+  // -------- Disable Priority for Q2 --------
+  selectQueue.addEventListener("change", function () {
+
+    if (this.value === "2") {
+      priorityInput.disabled = true;
+      priorityInput.value = "";
+    } else {
+      priorityInput.disabled = false;
+    }
+
+  });
+
+}
+  toggleInputs();
+  enableArrowNavigation();
+}
+
+function removeProcess() {
+    if (ptable.rows.length > 2) { // Keep at least 1 process
+        ptable.deleteRow(-1); // Remove the last row
+        pc--; // Decrement process count
+    } else {
+        alert("At least one process is required!");
+    }
+}
+
+function getP(){
+  let rows = ptable.rows;
+  let processes = [];
+
+  for(let i = 1; i < rows.length; i++){
+
+    const row = rows[i];
+
+    const atInput = row.cells[1].querySelector("input");
+    const btInput = row.cells[2].querySelector("input");
+
+    // Normal priority column (when NOT hybrid)
+    const normalPriorityInput = row.querySelector(".priority-col input");
+
+    // Hybrid columns
+    const queueSelect = row.querySelector(".hybrid-queue-col select");
+    const hybridPriorityInput = row.querySelector(".hybrid-priority-col input");
+
+    processes.push({
+      pid: i,
+      at: parseInt(atInput?.value || 0),
+      bt: parseInt(btInput?.value || 0),
+      pr: hybridCheckbox.checked
+            ? parseInt(hybridPriorityInput?.value || 0)
+            : parseInt(normalPriorityInput?.value || 0),
+      rt: parseInt(btInput?.value || 0),
+      hybridQueue: queueSelect ? parseInt(queueSelect.value) : 1
+    });
+  }
+
+  return processes;
+}
+
+
+function draw(c){
+  gantt.innerHTML = "";
+
+  c.forEach(x => {
+    const duration = x.e - x.s;
+    const block = document.createElement("div");
+
+    block.className = "block";
+    block.style.width = (duration * TIME_UNIT) + "px";
+
+    if (x.pid === "IDLE") {
+      block.classList.add("idle");
+      block.innerHTML = `IDLE<br>${x.s}–${x.e}`;
+    } else {
+      block.innerHTML = `P${x.pid}<br>${x.s}–${x.e}`;
+    }
+
+    gantt.appendChild(block);
+  });
+}
+
+function explainGantt(c, algorithm){
+
+  let steps = "<b>How the CPU Made Decisions (Step-by-Step Logic):</b><br><br>";
+
+  let currentTime = 0;
+
+  c.forEach((block, index) => {
+
+    if(block.pid === "IDLE"){
+      steps += `At time ${block.s}, no process had arrived yet. CPU remained IDLE until ${block.e}.<br><br>`;
+      currentTime = block.e;
+      return;
+    }
+
+    // Find available processes at that time
+    let available = getP().filter(p => p.at <= block.s);
+
+    let availableList = available.map(p => "P" + p.pid).join(", ");
+
+    if(algorithm === "FCFS"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      Available Processes: ${availableList}<br>
+      CPU selects P${block.pid} because it arrived first.<br>
+      It runs until ${block.e}.<br><br>`;
+    }
+
+    else if(algorithm === "SJF"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      Available Processes: ${availableList}<br>
+      CPU selects P${block.pid} because it has the shortest burst time among them.<br>
+      It runs until completion at ${block.e}.<br><br>`;
+    }
+
+    else if(algorithm === "SRTN"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      CPU compares remaining time of all available processes.<br>
+      P${block.pid} has the smallest remaining time.<br>
+      It runs until ${block.e} (may be preempted if shorter job arrives).<br><br>`;
+    }
+
+    else if(algorithm === "PNP"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      Available Processes: ${availableList}<br>
+      CPU selects P${block.pid} based on highest priority.<br>
+      Non-preemptive → runs fully until ${block.e}.<br><br>`;
+    }
+
+    else if(algorithm === "PP"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      CPU selects highest priority process P${block.pid}.<br>
+      If a higher priority arrives, it preempts.<br>
+      Runs from ${block.s} to ${block.e}.<br><br>`;
+    }
+
+    else if(algorithm === "RR"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      Round Robin selects next process in queue → P${block.pid}.<br>
+      It executes for one time quantum or until completion (${block.e}).<br><br>`;
+    }
+
+    else if(algorithm === "HYBRID"){
+      steps += `
+      <b>Time ${block.s}:</b><br>
+      CPU first checks Queue 1 (Priority Queue).<br>
+      If available → executes highest priority P${block.pid}.<br>
+      Otherwise → executes from Queue 2 (FCFS).<br>
+      Runs until ${block.e}.<br><br>`;
+    }
+
+    currentTime = block.e;
+
+  });
+
+  document.getElementById("ganttExplanation").innerHTML = steps;
+}
+
+function loadExample() {
+
+  const selectedAlgo = hybridCheckbox.checked ? "HYBRID" : algo.value;
+
+  // Reset table to only header
+  while (ptable.rows.length > 1) {
+    ptable.deleteRow(1);
+  }
+
+  pc = 0;
+
+  let exampleData = [];
+
+  if (selectedAlgo === "FCFS") {
+    exampleData = [
+      { at: 0, bt: 5 },
+      { at: 2, bt: 3 },
+      { at: 4, bt: 1 }
+    ];
+  }
+
+  if (selectedAlgo === "SJF") {
+    exampleData = [
+      { at: 0, bt: 7 },
+      { at: 2, bt: 4 },
+      { at: 4, bt: 1 }
+    ];
+  }
+
+  if (selectedAlgo === "SRTN") {
+    exampleData = [
+      { at: 0, bt: 8 },
+      { at: 1, bt: 4 },
+      { at: 2, bt: 2 }
+    ];
+  }
+
+  if (selectedAlgo === "PNP" || selectedAlgo === "PP") {
+    exampleData = [
+      { at: 0, bt: 5, pr: 2 },
+      { at: 1, bt: 3, pr: 1 },
+      { at: 2, bt: 4, pr: 3 }
+    ];
+  }
+
+  if (selectedAlgo === "RR") {
+    exampleData = [
+      { at: 0, bt: 5 },
+      { at: 1, bt: 4 },
+      { at: 2, bt: 2 }
+    ];
+    document.getElementById("qt").value = 2;
+  }
+
+  if (selectedAlgo === "HYBRID") {
+    exampleData = [
+      { at: 0, bt: 5, pr: 1, queue: 1 },
+      { at: 1, bt: 3, pr: 2, queue: 1 },
+      { at: 2, bt: 4, queue: 2 }
+    ];
+  }
+
+  exampleData.forEach(data => {
+    addProcess();
+    let row = ptable.rows[ptable.rows.length - 1];
+
+    row.cells[1].querySelector("input").value = data.at;
+    row.cells[2].querySelector("input").value = data.bt;
+
+    if (selectedAlgo === "PNP" || selectedAlgo === "PP") {
+      row.cells[3].querySelector("input").value = data.pr;
+    }
+
+    if (selectedAlgo === "HYBRID") {
+      let queueSelect = row.querySelector(".hybrid-queue-col select");
+      let priorityInput = row.querySelector(".hybrid-priority-col input");
+
+      if (queueSelect) queueSelect.value = data.queue;
+      if (priorityInput && data.pr) priorityInput.value = data.pr;
+    }
+  });
+
+}
+
+function calc(p, c){
+
+  let sumTAT = 0, sumWT = 0, sumRT = 0;
+
+  result.innerHTML =
+    "<tr><th>Process</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>";
+
+  [...p].sort((a, b) => a.pid - b.pid).forEach(x => {
+
+    let executions = c.filter(g => g.pid === x.pid);
+
+    let ct = Math.max(...executions.map(g => g.e), 0);
+
+    let firstStart = executions.length ? executions[0].s : 0;
+
+    let tat = ct - x.at;
+    let wt  = tat - x.bt;
+    let rt  = firstStart - x.at;
+
+    sumTAT += tat;
+    sumWT  += wt;
+    sumRT  += rt;
+
+    result.innerHTML += `
+      <tr>
+        <td>P${x.pid}</td>
+        <td>${ct}</td>
+        <td>${tat}</td>
+        <td>${wt}</td>
+        <td>${rt}</td>
+      </tr>`;
+  });
+
+  result.innerHTML += `
+    <tr style="font-weight:bold;background:#0d1117">
+      <td>Average</td>
+      <td>—</td>
+      <td>${(sumTAT/p.length).toFixed(2)}</td>
+      <td>${(sumWT/p.length).toFixed(2)}</td>
+      <td>${(sumRT/p.length).toFixed(2)}</td>
+    </tr>`;
+}
+
+function calculateExtraMetrics(processes, ganttChart) {
+
+    // Total Time = last Gantt block end
+    const totalTime = ganttChart[ganttChart.length - 1].e;
+
+    // Total Burst Time
+    const totalBurstTime = processes.reduce((sum, p) => sum + p.bt, 0);
+
+    // Idle Time
+    const idleTime = totalTime - totalBurstTime;
+
+    // CPU Utilization
+    const cpuUtilization = ((totalBurstTime / totalTime) * 100).toFixed(2);
+
+    // Throughput
+    const throughput = (processes.length / totalTime).toFixed(3);
+
+    // Build Calculation Explanation
+    let calculationHTML = `
+        <h3>Detailed Calculations</h3>
+
+        <p><b>Total Burst Time</b> = ${processes.map(p => p.bt).join(" + ")} 
+        = ${totalBurstTime}</p>
+
+        <p><b>Total Time</b> = ${totalTime}</p>
+
+        <p><b>Idle Time</b> = Total Time − Total Burst Time 
+        = ${totalTime} − ${totalBurstTime} = ${idleTime}</p>
+
+       <hr style="border: none; height: 1px; background-color: gray;">
+
+        <p><b>CPU Utilization</b> = (Total Burst Time / Total Time) × 100</p>
+        <p>= (${totalBurstTime} / ${totalTime}) × 100</p>
+        <p>= ${cpuUtilization}%</p>
+
+   <hr style="border: none; height: 1px; background-color: gray;">
+
+        <p><b>Throughput</b> = Number of Processes / Total Time</p>
+        <p>= ${processes.length} / ${totalTime}</p>
+        <p>= ${throughput} processes per time unit</p>
+    `;
+
+    document.getElementById("extraMetrics").innerHTML = calculationHTML;
+}
+ 
+function interpretResults(cpuUtil, throughput){
+  let message = "";
+
+  if(cpuUtil > 80){
+    message += "CPU is efficiently utilized. ";
+  } else {
+    message += "CPU has significant idle time. ";
+  }
+
+  if(throughput > 0.5){
+    message += "System handles processes quickly.";
+  } else {
+    message += "Process execution rate is slow.";
+  }
+
+  document.getElementById("extraMetrics").innerHTML +=
+      "<br><br>Interpretation: " + message;
+}
+
+let perfData = [];
+
+function buildPerfData(p, c){
+  perfData = p.map(x => {
+    let ct = Math.max(...c.filter(g => g.pid === x.pid).map(g => g.e));
+    let tat = ct - x.at;
+    let wt = tat - x.bt;
+    return { pid: x.pid, wt, tat };
+  });
+}
+
+function showWT(){
+  renderChart("wt", "#f85149");
+}
+
+function showTAT(){
+  renderChart("tat", "#2ea043");
+}
+
+function showThroughput(){
+  renderThroughputChart();
+}
+
+function renderThroughputChart(){
+
+  const chart = document.getElementById("perfChart");
+  chart.innerHTML = "";
+
+  const maxHeight = 180;
+
+  const wrapper = document.createElement("div");
+
+  const bar = document.createElement("div");
+  bar.className = "bar";
+
+  let height = systemThroughput * 100; 
+  if(height > maxHeight) height = maxHeight;
+
+  bar.style.height = height + "px";
+  bar.style.background = "#ff9800";
+
+  bar.innerHTML = `<span>${systemThroughput.toFixed(2)}</span>`;
+
+  const label = document.createElement("div");
+  label.className = "bar-label";
+  label.innerText = "Throughput";
+
+  wrapper.appendChild(bar);
+  wrapper.appendChild(label);
+  chart.appendChild(wrapper);
+
+  document.getElementById("perfCard").style.display = "block";
+
+  document.getElementById("graphExplanation").innerHTML =
+    "<b>Graph Explanation:</b><br>Throughput represents how many processes are completed per unit time. Higher bar means better overall system performance.";
+}
+
+function renderChart(type, color){
+  const chart = document.getElementById("perfChart");
+  chart.innerHTML = "";
+
+  const max = Math.max(...perfData.map(x => x[type]));
+
+  perfData.forEach(p => {
+    const h = (p[type] / max) * 180;
+
+    const wrapper = document.createElement("div");
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.height = h + "px";
+    bar.style.background = color;
+    bar.innerHTML = `<span>${p[type]}</span>`;
+
+    const label = document.createElement("div");
+    label.className = "bar-label";
+    label.innerText = "P" + p.pid;
+
+    wrapper.appendChild(bar);
+    wrapper.appendChild(label);
+    chart.appendChild(wrapper);
+  });
+
+  document.getElementById("perfCard").style.display = "block";
+  explainGraph(type);
+
+}
+
+function showAlgorithmDefinition(algo) {
+
+  const definitions = {
+    "FCFS":
+      "FCFS (First Come First Serve) schedules processes in the order in which they arrive in the ready queue. The process that comes first is executed first without preemption.",
+
+    "SJF":
+      "SJF (Shortest Job First) selects the process with the smallest burst time for execution. It reduces average waiting time but requires knowing the burst time in advance.",
+
+    "SRTN":
+      "SRTN (Shortest Remaining Time Next) is the preemptive version of SJF. The CPU always executes the process with the smallest remaining burst time and can interrupt a running process.",
+
+    "PNP":
+      "Priority Scheduling (Non-Preemptive) executes the process with the highest priority first. Once started, a process runs to completion.",
+
+    "PP":
+      "Priority Scheduling (Preemptive) allows the CPU to switch to a higher-priority process whenever it arrives.",
+
+    "RR":
+      "Round Robin Scheduling assigns a fixed time quantum to each process in cyclic order, ensuring fairness and preventing starvation.",
+
+    "HYBRID":
+    "Multilevel Queue Scheduling: Queue 1 uses Non-Preemptive Priority scheduling. Queue 2 uses FCFS. Queue 1 always executes before Queue 2."
+
+  };
+
+  const box = document.getElementById("algoDefinition");
+  box.innerText = definitions[algo];
+  box.style.display = "block";
+}
+ 
+const hybridCheckbox = document.getElementById("hybridMode");
+const algoDropdown = document.getElementById("algo");
+const instructionsDiv = document.getElementById("userInstructions");
+const animatedBg = document.querySelector(".animated-bg");
+
+hybridCheckbox.addEventListener("change", function() {
+  if(this.checked){
+    // Change animated background
+    animatedBg.classList.add("hybrid-bg");
+
+    // Center instructions
+    instructionsDiv.classList.add("hybrid");
+
+    // Disable algorithm dropdown
+    algoDropdown.disabled = true;
+    algoDropdown.style.opacity = 0.6;
+    algoDropdown.style.cursor = "not-allowed";
+
+    // Optional: show hybrid info
+    if(!instructionsDiv.querySelector(".hybrid-info")){
+      const p = document.createElement("p");
+      p.className = "hybrid-info";
+      p.style.color = "#58a6ff";
+      p.style.fontWeight = "500";
+      p.innerText = "Hybrid mode enabled: multilevel queues with different algorithms are active.";
+      instructionsDiv.appendChild(p);
+    }
+
+  } else {
+    animatedBg.classList.remove("hybrid-bg");
+    instructionsDiv.classList.remove("hybrid");
+
+    algoDropdown.disabled = false;
+    algoDropdown.style.opacity = 1;
+    algoDropdown.style.cursor = "pointer";
+
+    // Remove hybrid info message
+    const p = instructionsDiv.querySelector(".hybrid-info");
+    if(p) p.remove();
+  }
+
+ const headerRow = ptable.rows[0];
+
+if (this.checked) {
+
+    // Hide normal priority column
+    document.querySelectorAll(".priority-col").forEach(col => {
+        col.style.display = "none";
+    });
+
+    // -------- ADD QUEUE HEADER --------
+    const thQueue = document.createElement("th");
+    thQueue.innerText = "Queue";
+    thQueue.classList.add("hybrid-queue-col");
+    headerRow.appendChild(thQueue);
+
+    // -------- ADD HYBRID PRIORITY HEADER --------
+    const thPriority = document.createElement("th");
+    thPriority.innerText = "Hybrid Priority";
+    thPriority.classList.add("hybrid-priority-col");
+    headerRow.appendChild(thPriority);
+
+    // -------- ADD CELLS TO EXISTING ROWS --------
+    for (let i = 1; i < ptable.rows.length; i++) {
+
+        // Queue Column
+        const queueCell = ptable.rows[i].insertCell(-1);
+        queueCell.classList.add("hybrid-queue-col");
+
+        const selectQueue = document.createElement("select");
+
+        let opt1 = document.createElement("option");
+        opt1.value = "1";
+        opt1.innerText = "Q1 (Priority)";
+        selectQueue.appendChild(opt1);
+
+        let opt2 = document.createElement("option");
+        opt2.value = "2";
+        opt2.innerText = "Q2 (FCFS)";
+        selectQueue.appendChild(opt2);
+
+        queueCell.appendChild(selectQueue);
+
+        // Hybrid Priority Column
+        const priorityCell = ptable.rows[i].insertCell(-1);
+        priorityCell.classList.add("hybrid-priority-col");
+
+        const priorityInput = document.createElement("input");
+        priorityInput.type = "number";
+        priorityInput.placeholder = "Priority";
+
+        priorityCell.appendChild(priorityInput);
+
+        // Disable priority for Q2
+        selectQueue.addEventListener("change", function () {
+            if (this.value === "2") {
+                priorityInput.disabled = true;
+                priorityInput.value = "";
+            } else {
+                priorityInput.disabled = false;
+            }
+        });
+    }
+
+} else {
+
+    // Remove hybrid columns
+    document.querySelectorAll(".hybrid-queue-col").forEach(el => el.remove());
+    document.querySelectorAll(".hybrid-priority-col").forEach(el => el.remove());
+
+    // Show normal priority column again
+    document.querySelectorAll(".priority-col").forEach(col => {
+        col.style.display = "";
+    });
+}
+
+});
+
+
+/* ALGORITHMS */
+
+function fcfs(p){
+p.sort((a,b)=>{
+  if(a.at !== b.at) return a.at - b.at;
+  return a.pid - b.pid;
+});
+let t=0,c=[];
+p.forEach(x=>{
+let s = Math.max(t, x.at);
+
+if (s > t) {
+  c.push({ pid: "IDLE", s: t, e: s });
+}
+
+c.push({ pid: x.pid, s: s, e: s + x.bt });
+t = s + x.bt;
+
+});
+return c;
+}
+
+function sjf(p){
+let t=0,c=[],r=[...p];
+while(r.length){
+let a=r.filter(x=>x.at<=t);
+if (!a.length) {
+  let idleStart = t;
+  t++;
+  while (r.filter(x => x.at <= t).length === 0) t++;
+  c.push({ pid: "IDLE", s: idleStart, e: t });
+  continue;
+}
+a.sort((a,b)=>{
+  if(a.bt !== b.bt) return a.bt - b.bt;
+  if(a.at !== b.at) return a.at - b.at;
+  return a.pid - b.pid;
+});
+
+let x=a[0];
+c.push({pid:x.pid,s:t,e:t+x.bt});
+t+=x.bt;
+r.splice(r.indexOf(x),1);
+}
+return c;
+}
+
+function srtn(p){
+let t=0,c=[],r=p.map(x=>({...x,rt:x.bt}));
+while(r.some(x=>x.rt>0)){
+let a=r.filter(x=>x.at<=t && x.rt>0);
+if (!a.length) {
+  let idleStart = t;
+  t++;
+  while (r.filter(x => x.at <= t && x.rt > 0).length === 0) t++;
+  c.push({ pid: "IDLE", s: idleStart, e: t });
+  continue;
+}
+a.sort((a,b)=>{
+  if(a.rt !== b.rt) return a.rt - b.rt;   // remaining time
+  if(a.at !== b.at) return a.at - b.at;   // arrival time
+  return a.pid - b.pid;                   // FCFS / PID
+});
+
+let x=a[0];
+if(!c.length||c[c.length-1].pid!=x.pid)
+c.push({pid:x.pid,s:t,e:t+1});
+else c[c.length-1].e++;
+x.rt--;t++;
+}
+return c;
+}
+
+function priorityNP(p,rule){
+let t=0,c=[],r=[...p];
+while(r.length){
+let a=r.filter(x=>x.at<=t);
+if (!a.length) {
+  let idleStart = t;
+  t++;
+  while (r.filter(x => x.at <= t).length === 0) t++;
+  c.push({ pid: "IDLE", s: idleStart, e: t });
+  continue;
+}
+a.sort((a,b)=>{
+  let prCmp = rule=="LOW" ? a.pr - b.pr : b.pr - a.pr;
+  if(prCmp !== 0) return prCmp;
+  if(a.at !== b.at) return a.at - b.at;
+  return a.pid - b.pid;
+});
+
+let x=a[0];
+c.push({pid:x.pid,s:t,e:t+x.bt});
+t+=x.bt;
+r.splice(r.indexOf(x),1);
+}
+return c;
+}
+
+function priorityP(p,rule){
+let t=0,c=[],r=p.map(x=>({...x,rt:x.bt}));
+while(r.some(x=>x.rt>0)){
+let a=r.filter(x=>x.at<=t && x.rt>0);
+if (!a.length) {
+  let idleStart = t;
+  t++;
+  while (r.filter(x => x.at <= t && x.rt > 0).length === 0) t++;
+  c.push({ pid: "IDLE", s: idleStart, e: t });
+  continue;
+}
+a.sort((a,b)=>{
+  let prCmp = rule=="LOW" ? a.pr - b.pr : b.pr - a.pr;
+  if(prCmp !== 0) return prCmp;
+  if(a.rt !== b.rt) return a.rt - b.rt;
+  if(a.at !== b.at) return a.at - b.at;
+  return a.pid - b.pid;
+});
+
+let x=a[0];
+if(!c.length||c[c.length-1].pid!=x.pid)
+c.push({pid:x.pid,s:t,e:t+1});
+else c[c.length-1].e++;
+x.rt--;t++;
+}
+return c;
+}
+
+function rr(p, quantum) {
+
+    let time = 0;
+    let gantt = [];
+    let queue = [];
+
+    // Clone + add remaining time
+    let remaining = p.map(x => ({
+        ...x,
+        rt: x.bt
+    }));
+
+    //  CRITICAL FIX: sort by Arrival Time, then PID
+    remaining.sort((a, b) => {
+        if (a.at !== b.at) return a.at - b.at;
+        return a.pid.localeCompare(b.pid);
+    });
+
+    let completed = 0;
+    let n = remaining.length;
+
+    while (completed < n) {
+
+        // Add processes that have arrived
+        remaining.forEach(x => {
+            if (x.at <= time && x.rt > 0 && !queue.includes(x)) {
+                queue.push(x);
+            }
+        });
+
+        // CPU Idle
+        if (queue.length === 0) {
+            let idleStart = time;
+            time++;
+            gantt.push({ pid: "IDLE", s: idleStart, e: time });
+            continue;
+        }
+
+        let cur = queue.shift();
+
+        let exec = Math.min(quantum, cur.rt);
+        let start = time;
+
+        time += exec;
+        cur.rt -= exec;
+
+        gantt.push({ pid: cur.pid, s: start, e: time });
+
+        // Add arrivals during execution window
+        remaining.forEach(x => {
+            if (x.at > start && x.at <= time && x.rt > 0 && !queue.includes(x)) {
+                queue.push(x);
+            }
+        });
+
+        // Requeue or complete
+        if (cur.rt > 0) {
+            queue.push(cur);
+        } else {
+            cur.ct = time;
+            completed++;
+        }
+    }
+
+    // Copy completion time back to original array
+    remaining.forEach(r => {
+        let original = p.find(x => x.pid === r.pid);
+        original.ct = r.ct;
+    });
+
+    return gantt;
+}
+
+function mergeGantt(c){
+  let merged = [];
+  c.forEach(x => {
+    if (!merged.length || merged[merged.length-1].pid !== x.pid) {
+      merged.push({...x});
+    } else {
+      merged[merged.length-1].e = x.e;
+    }
+  });
+  return merged;
+}
+
+function showComp(selectedAlgo) {
+  const table = document.getElementById("complexityTable");
+  const rows = Array.from(table.rows);
+
+  rows.forEach((row, index) => {
+    if (index === 0) return; // keep header
+
+    const algoName = row.cells[0].innerText;
+
+    if (algoName === selectedAlgo) {
+      row.style.display = "";
+      row.classList.add("highlight-algo");
+    } else {
+      row.style.display = "none";
+      row.classList.remove("highlight-algo");
+    }
+  });
+}
+
+function explainResults(){
+  document.getElementById("resultExplanation").innerHTML = `
+    <b>Result Calculation:</b><br>
+    Completion Time (CT) = Time when process finishes execution.<br>
+    Turnaround Time (TAT) = CT - Arrival Time.<br>
+    Waiting Time (WT) = TAT - Burst Time.
+  `;
+}
+
+function explainGraph(type){
+
+  let text = "";
+
+  if(type === "wt"){
+    text = "This graph represents Waiting Time of each process. Lower bars indicate better scheduling efficiency.";
+  }
+
+  if(type === "tat"){
+    text = "This graph represents Turnaround Time of each process. It shows total time taken from arrival to completion.";
+  }
+
+  document.getElementById("graphExplanation").innerHTML =
+    "<b>Graph Explanation:</b><br>" + text;
+}
+
+
+function populateComplexityTable(){
+  const table = document.getElementById("complexityTable");
+  const complexities = {
+    "FCFS": {time:"O(n)", space:"O(n)"},
+    "SJF":  {time:"O(n log n) (sorting by burst time)", space:"O(n)"},
+    "SRTN": {time:"O(n log n)", space:"O(n)"},
+    "PNP":  {time:"O(n log n)", space:"O(n)"},
+    "PP":   {time:"O(n log n)", space:"O(n)"},
+    "RR":   {time:"O(n × T / q)", space:"O(n)"},
+    "HYBRID": {time:"O(n log n)", space:"O(n)"}
+  };
+
+  for(let algo in complexities){
+    let row = table.insertRow();
+    row.insertCell(0).innerText = algo;
+    row.insertCell(1).innerText = complexities[algo].time;
+    row.insertCell(2).innerText = complexities[algo].space;
+  }
+}
+
+populateComplexityTable();  // call on page load
+
+function toggleInputs(){
+  const a = algo.value;
+
+  const isPriority = (a === "PNP" || a === "PP");
+  const isRR = (a === "RR");
+
+  // Priority column
+  document.querySelectorAll(".priority-col").forEach(col=>{
+    col.style.display = isPriority ? "table-cell" : "none";
+  });
+
+  // Priority rule
+  document.getElementById("priorityRuleBox").style.display =
+    isPriority ? "inline-block" : "none";
+
+  // Quantum
+  document.getElementById("quantumBox").style.display =
+    isRR ? "inline-block" : "none";
+}
+
+function enableArrowNavigation() {
+
+  if (ptable.dataset.listenerAttached) return;
+  ptable.dataset.listenerAttached = "true";
+
+  ptable.addEventListener("keydown", function(e) {
+
+    if (!e.target.matches("input,select")) return;
+
+    const td = e.target.closest("td");
+    const tr = e.target.closest("tr");
+
+    let colIndex = td.cellIndex;
+    let rowIndex = tr.rowIndex;
+
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault();
+        moveTo(rowIndex, colIndex + 1);
+        break;
+
+      case "ArrowLeft":
+        e.preventDefault();
+        moveTo(rowIndex, colIndex - 1);
+        break;
+
+      case "ArrowDown":
+        e.preventDefault();
+        moveTo(rowIndex + 1, colIndex);
+        break;
+
+      case "ArrowUp":
+        e.preventDefault();
+        moveTo(rowIndex - 1, colIndex);
+        break;
+    }
+
+  });
+}
+
+function moveTo(r, c){
+  const row = ptable.rows[r];
+  if (!row) return;
+
+  const cell = row.cells[c];
+  if (!cell) return;
+
+  const input = cell.querySelector("input,select");
+  if (input) input.focus();
+}
+
+function hybrid(processes) {
+
+    let time = 0;
+    let gantt = [];
+    let remaining = processes.map(p => ({ ...p }));
+
+    while (remaining.some(p => p.rt > 0)) {
+
+        // Get arrived processes
+        let available = remaining.filter(p => p.at <= time && p.rt > 0);
+
+        if (available.length === 0) {
+            gantt.push({ pid: "IDLE", s: time, e: time + 1 });
+            time++;
+            continue;
+        }
+
+        // Separate queues
+        let q1 = available.filter(p => p.hybridQueue == 1);
+        let q2 = available.filter(p => p.hybridQueue == 2);
+
+        let current;
+
+        if (q1.length > 0) {
+
+            q1.sort((a, b) => {
+                if (a.pr !== b.pr) return a.pr - b.pr;
+                if (a.at !== b.at) return a.at - b.at;
+                return a.pid - b.pid;
+            });
+
+            current = q1[0];
+
+        } else {
+
+            q2.sort((a, b) => {
+                if (a.at !== b.at) return a.at - b.at;
+                return a.pid - b.pid;
+            });
+
+            current = q2[0];
+        }
+
+        // Run only 1 unit (so Q1 can preempt Q2)
+        if (!gantt.length || gantt[gantt.length - 1].pid !== current.pid) {
+            gantt.push({ pid: current.pid, s: time, e: time + 1 });
+        } else {
+            gantt[gantt.length - 1].e++;
+        }
+
+        current.rt--;
+        time++;
+    }
+
+    return gantt;
+}
+
+function run(){
+
+let a = hybridCheckbox.checked ? "HYBRID" : algo.value;
+  let p = getP();   //  FIRST get process data
+  let c = [];
+
+  //  VALIDATION (NOW IT WILL WORK)
+  if (p.some(x => isNaN(x.at) || isNaN(x.bt) || x.bt <= 0)) {
+    alert("Please enter valid Arrival Time and Burst Time");
+    return;
+  }
+
+  // PRIORITY VALIDATION
+if (a === "PNP" || a === "PP") {
+  if (p.some(x => isNaN(x.pr))) {
+    alert("Please enter valid Priority values");
+    return;
+  }
+}
+
+if (a === "HYBRID") {
+  if (p.some(x => x.hybridQueue == 1 && (isNaN(x.pr) || x.pr <= 0))) {
+    alert("Please enter valid Hybrid Priority for Queue 1 processes");
+    return;
+  }
+}
+
+  //  ROUND ROBIN QUANTUM CHECK
+  let quantum = parseInt(document.getElementById("qt").value);
+  if (a === "RR" && (!quantum || quantum <= 0)) {
+    alert("Please enter a valid Time Quantum");
+    return;
+  }
+
+  // ---------- ALGORITHM EXECUTION ----------
+  if(a=="FCFS") c = fcfs(p);
+  if(a=="SJF")  c = sjf(p);
+  if(a=="SRTN") c = srtn(p);
+
+  const rule = document.getElementById("prule").value;
+  if(a=="PNP")  c = priorityNP(p, rule);
+  if(a=="PP")   c = priorityP(p, rule);
+  if(a=="RR")   c = rr(p, quantum);
+  if(a=="HYBRID") c = hybrid(p);
+
+
+
+  if(a=="SRTN" || a=="PP" || a=="HYBRID"){
+  c = mergeGantt(c);
+}
+
+  c = c.filter(x => x.s !== x.e);
+
+  draw(c);
+  explainGantt(c, a);
+  calc(p, c);
+  explainResults();
+  calculateExtraMetrics(p, c);
+  buildPerfData(p, c);
+  showWT(); // default graph
+  showComp(a);
+  showAlgorithmDefinition(a);
+
+  document.getElementById("ganttCard").style.display = "block";
+  document.getElementById("resultCard").style.display = "block";
+  document.getElementById("complexityCard").style.display = "block";
+}
+
+function resetPage() {
+  location.reload();
+}
+
+toggleInputs();
+enableArrowNavigation();
+
+</script>
+
+</body>
+</html>  

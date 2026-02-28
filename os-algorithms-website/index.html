@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrated Operating System Scheduler Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    overflow: hidden;
+    background: #0d1117;
+    position: relative;
+  }
+
+  canvas {
+    position: fixed; /* cover full screen */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+.main-heading {
+  font-family: 'Audiowide', cursive;
+  font-size: 44px;
+  letter-spacing: 2px;
+  font-weight: 600;
+
+  background: linear-gradient(
+    90deg,
+    #4fd1c5 0%,
+    #ffffff 25%,
+    #00f5ff 50%,
+    #ffffff 75%,
+    #4fd1c5 100%
+  );
+
+  background-size: 300% 100%;
+  background-position: 0% 50%;
+
+  background-clip: text;
+  -webkit-background-clip: text;
+
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+
+  animation: textShine 6s linear infinite;
+}
+
+@keyframes textShine {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+  p {
+    color: #a0aec0;
+    font-size: 1.05em;
+    margin-bottom: 50px;
+  }
+
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 40px;
+    position: relative;
+    z-index: 1;
+    padding: 20px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+ .card-container {
+  display: flex; /* Use flex instead of grid for same line */
+  justify-content: center;
+  align-items: stretch; /* Make all cards same height */
+  gap: 30px;
+  width: 100%;
+  flex-wrap: nowrap; /* Keep in single line, no wrap */
+}
+
+.card {
+  flex: 1; /* Equal width for all cards */
+  max-width: 220px; /* optional, to prevent huge cards on large screens */
+  min-height: 200px; /* same height for all */
+  background: rgba(22, 33, 62, 0.85);
+  border-radius: 15px;
+  padding: 40px 20px;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(79,209,197,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  height: 60px;
+  transition: all 0.4s ease;
+
+  /* This line fixes black icons */
+  filter: invert(72%) sepia(38%) saturate(470%)
+          hue-rotate(128deg) brightness(95%) contrast(90%)
+          drop-shadow(0 0 6px #4fd1c5);
+}
+
+.tagline {
+  font-size: 1.1em;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: #a0aec0;
+  max-width: 100%;
+  line-height: 1.6;
+  margin-top: 10px;
+  margin-bottom: 50px;
+  opacity: 0.9;
+}
+
+  .card:hover {
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: 0 15px 40px rgba(79, 209, 197, 0.6), inset 0 0 20px rgba(79,209,197,0.2);
+  }
+
+ .card h2 {
+  font-family: 'Audiowide', cursive;
+  font-size: 1.3em;
+  margin-top: 18px;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(79,209,197,0.5);
+}
+
+.card:hover h2 {
+  color: #4fd1c5;
+  letter-spacing: 2px;
+}
+
+ .card:hover .card-icon {
+  filter: invert(72%) sepia(38%) saturate(470%) hue-rotate(128deg) brightness(95%) contrast(90%)
+          drop-shadow(0 0 12px #4fd1c5);
+}
+
+  @media (max-width: 700px) {
+    .card-container {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="circuit"></canvas>
+<div class="dashboard">
+  <h1 class="main-heading">
+  Integrated Operating System <br />
+  <span class="highlight">Scheduler Simulator</span>
+</h1>
+  <p class="tagline">An interactive platform for exploring and analyzing Operating System algorithms in real time.</p>
+
+  <div class="card-container">
+    <div class="card" onclick="location.href='cpu.html'">
+      <img src="icons/cpu.svg" class="card-icon" alt="CPU Icon">
+      <h2>CPU Scheduling</h2>
+    </div>
+
+    <div class="card" onclick="location.href='page.html'">
+      <img src="icons/page.svg" class="card-icon" alt="Page Icon">
+      <h2>Page Replacement</h2>
+    </div>
+
+    <div class="card" onclick="location.href='disk.html'">
+      <img src="icons/disk.svg" class="card-icon" alt="Disk Icon">
+      <h2>Disk Scheduling</h2>
+    </div>
+
+    </div>
+</div>
+
+<script>
+// ================= CIRCUIT LINES SCRIPT =================
+const canvas = document.getElementById('circuit');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const nodes = [];
+const NODE_COUNT = 100;
+
+function Node(x, y) {
+  this.x = x;
+  this.y = y;
+  this.radius = 2 + Math.random() * 2;
+  this.vx = (Math.random() - 0.5) * 0.3;
+  this.vy = (Math.random() - 0.5) * 0.3;
+}
+
+for (let i = 0; i < NODE_COUNT; i++) {
+  nodes.push(new Node(Math.random() * canvas.width, Math.random() * canvas.height));
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  nodes.forEach(node => {
+    node.x += node.vx;
+    node.y += node.vy;
+
+    if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
+    if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.fill();
+  });
+
+  for (let i = 0; i < NODE_COUNT; i++) {
+    for (let j = i + 1; j < NODE_COUNT; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 150) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(79, 209, 197, ${1 - dist/150})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Disk Scheduling Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+ 
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter',sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #010308;
+}
+
+body{
+  background: radial-gradient(
+      circle at top,
+      #0a0f1c 0%,
+      #060b16 40%,
+      #03060d 70%,
+      #010308 100%
+  );
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:60px 20px 0 20px;
+  color:#e2e8f0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  position:relative;
+}
+
+#particles{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+.container{
+  width:100%;
+  max-width:1000px;
+  display:flex;
+  flex-direction:column;
+  gap:35px;
+  position:relative;
+  z-index:2;
+  padding: 0 40px;   
+}
+
+h1{
+    text-align: center;
+  margin-bottom: 40px;
+  color: #c4eafb;
+  font-weight: 800;
+  font-size: 2.2rem;
+  letter-spacing: 0.5px;
+}
+
+.info-box{
+  width: 100%;
+  max-width: 1600px;
+  background: rgba(15,23,42,0.6);
+  border: 1px solid rgba(56,189,248,0.25);
+  backdrop-filter: blur(18px);
+  padding: 40px;
+  border-radius: 22px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+  line-height: 1.6;
+  font-size: 14px; 
+}
+
+.card{
+  background:rgba(15,23,42,0.6);
+  border:1px solid rgba(56,189,248,0.25);
+  backdrop-filter:blur(18px);
+  padding:40px;
+  border-radius:22px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.5);
+  display:flex;
+  flex-direction:column;
+  gap:25px;
+}
+
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+label{
+  font-size:1rem;
+  color:#7dd3fc;
+}
+
+input, select{
+  padding: 8px 12px;        /* smaller height */
+  border-radius: 10px;      /* less rounded */
+  border: 1px solid rgba(255,255,255,0.08);
+  background:#0f172a;
+  color:#e2e8f0;
+  font-size: 0.9rem;        /* slightly smaller text */
+  height: 38px;             /* fixed smaller height */
+  transition: 0.3s;
+  width:50%;
+}
+
+#head,
+#algo {
+  width: 20%;
+}
+
+
+input:focus,select:focus{
+  border-color:#38bdf8;
+  box-shadow:0 0 0 3px rgba(56,189,248,0.25);
+  outline:none;
+}
+
+.button-group{
+  display:flex;
+  gap:20px;
+  margin-top:10px;
+  width: 64%;
+}
+
+button{
+  flex:1;
+  padding:16px;
+  border-radius:16px;
+  border:none;
+  font-weight:600;
+  font-size:1rem;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.run-btn{
+  background:linear-gradient(90deg,#3b82f6,#6366f1);
+  color:white;
+}
+
+.restart-btn{
+  background:transparent;
+  border:1px solid #38bdf8;
+  color:#38bdf8;
+}
+
+button:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 25px rgba(99,102,241,0.4);
+}
+
+.result{
+  background:rgba(15,23,42,0.6);
+  border:1px solid rgba(56,189,248,0.2);
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  line-height:1.8;
+}
+
+canvas{
+  margin-top:20px;
+  border-radius:18px;
+  box-shadow:0 15px 35px rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  display: block;
+}
+
+.example-btn{
+  background:linear-gradient(90deg,#10b981,#06b6d4);
+  color:white;
+}
+
+#compTable{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+  background:transparent;   /* remove card background */
+  box-shadow:none;          /* remove shadow */
+  border-radius:0;          /* remove rounded corners */
+}
+
+#compTable th{
+  background:#1e293b;       /* solid flat color */
+  color:#38bdf8;
+  padding:14px;
+  font-weight:600;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+#compTable td{
+  padding:12px;
+  text-align:center;
+  background:rgba(255,255,255,0.05);
+}
+
+.info-title{
+  font-size: 1.5rem;   /* smaller than before */
+  font-weight: 600;
+  margin-bottom: 15px;
+  line-height: 1.3;
+  background: linear-gradient(90deg,#68d4ff,#818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.result small{
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.how-to-use{
+  background: rgba(15,23,42,0.6);
+  border: 1px solid rgba(56,189,248,0.25);
+  backdrop-filter: blur(18px);
+  padding: 40px;
+  border-radius: 22px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+}
+
+.how-to-use h2{
+  font-size: 1.6rem; 
+  font-weight: 600;
+  color: #38bdf8;
+   line-height: 1.7;
+}
+
+.how-to-use ol{
+  padding-left: 20px;
+  line-height: 1.6;
+  font-size: 13.5px;
+}
+
+.result{
+  font-size:1.05rem;
+}
+
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<div class="container">
+ <h1>Disk Scheduling Simulator</h1>
+
+<div class="info-box">
+<h2 class="info-title">What is Disk Scheduling?</h2>
+
+Disk Scheduling is an Operating System mechanism used to decide the order 
+in which pending disk I/O requests are serviced. Since the time required 
+to access data on a disk largely depends on the movement of the disk head, 
+efficient scheduling is essential to reduce seek time, minimize latency, 
+and improve overall system performance. 
+
+Different disk scheduling algorithms apply different strategies to optimize 
+head movement, ensure fairness, and maximize throughput.
+</div>
+
+<div class="how-to-use">
+  <h2>How to Use ?</h2>
+  
+  <ol>
+    <li>Enter the disk request sequence (comma separated values).</li>
+    <li>Enter the initial head position.</li>
+    <li>Select the scheduling algorithm (FCFS, SSTF, SCAN, etc.).</li>
+    <li>Click the <b>Run</b> button.</li>
+    <li>View the graph and results below.</li>
+  </ol>
+</div>
+
+<div class="card">
+
+  <div class="form-group">
+    <label for="queue">Request Queue</label>
+    <input id="queue" placeholder="98, 183, 37, 122, 14, 124, 65, 67">
+  </div>
+
+  <div class="form-group">
+    <label for="head">Initial Head Position</label>
+    <input id="head" placeholder="53">
+  </div>
+
+  <div class="form-group">
+    <label for="algo">Algorithm</label>
+    <select id="algo" onchange="toggleDiskSize()">
+      <option value="FCFS">FCFS</option>
+      <option value="SSTF">SSTF</option>
+      <option value="SCAN">SCAN</option>
+      <option value="CSCAN">C-SCAN</option>
+    </select>
+  </div>
+
+  <div class="form-group" id="sizeGroup" style="display:none;">
+    <label for="size">Disk Size</label>
+    <input id="size" placeholder="200 (default)">
+  </div>
+
+<div class="button-group">
+  <button class="run-btn" onclick="run()">Run Simulation</button>
+  <button class="restart-btn" onclick="location.reload()">Restart</button>
+  <button class="example-btn" onclick="loadExample()">Load Example</button>
+</div>
+
+</div>
+
+  <div class="result" id="result" style="display:none;"></div>
+ <canvas id="chart" width="800" height="400"
+        style="display:none; background:#ffffff; border-radius:18px;">
+</canvas>
+
+
+<div class="result" id="interpretationBox" style="display:none; margin-top:20px;"></div>
+
+
+  <h3 id="compTitle" style="text-align:center; margin-top:20px; display:none;">
+  Time & Space Complexity
+</h3>
+
+<table id="compTable" style="display:none;">
+  <tr>
+    <th>Algorithm</th>
+    <th>Time</th>
+    <th>Space</th>
+  </tr>
+  <tr id="compRow"></tr>
+</table>
+
+<div class="result" id="complexity" style="display:none;"></div>
+
+
+<script>
+// ================= DISK ALGO WITH SEEK SEQUENCE =================
+function fcfs(q,h){
+  let t=0,c=h,seq=[h];
+  q.forEach(x=>{ t+=Math.abs(x-c); c=x; seq.push(x); });
+  return {t,seq};
+}
+
+function sstf(q,h){
+  let t=0,c=h,p=[...q],seq=[h];
+  while(p.length){
+    p.sort((a,b)=>Math.abs(a-c)-Math.abs(b-c));
+    t+=Math.abs(p[0]-c);
+    c=p.shift();
+    seq.push(c);
+  }
+  return {t,seq};
+}
+
+function scan(q,h,size=200){
+  let left=q.filter(x=>x<h).sort((a,b)=>b-a);
+  let right=q.filter(x=>x>=h).sort((a,b)=>a-b);
+  let t=0,c=h,seq=[h];
+
+  right.forEach(x=>{ t+=Math.abs(x-c); c=x; seq.push(x); });
+  t+=Math.abs(size-1-c); c=size-1; seq.push(c);
+  left.forEach(x=>{ t+=Math.abs(x-c); c=x; seq.push(x); });
+
+  return {t,seq};
+}
+
+function cscan(q,h,size=200){
+  let left=q.filter(x=>x<h).sort((a,b)=>a-b);
+  let right=q.filter(x=>x>=h).sort((a,b)=>a-b);
+  let t=0,c=h,seq=[h];
+
+  right.forEach(x=>{ t+=Math.abs(x-c); c=x; seq.push(x); });
+  t+=Math.abs(size-1-c)+size-1; c=0; seq.push(0);
+  left.forEach(x=>{ t+=Math.abs(x-c); c=x; seq.push(x); });
+
+  return {t,seq};
+}
+
+function loadExample() {
+
+  // Example values
+  document.getElementById("queue").value =
+    "98, 183, 37, 122, 14, 124, 65, 67";
+
+  document.getElementById("head").value = "53";
+
+  document.getElementById("size").value = "200";
+
+  // Keep whatever algorithm user selected
+  toggleDiskSize();
+
+  // Optional: auto run without changing algorithm
+  // run();
+}
+
+function drawChart(sequence, diskSize) {
+
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+
+  canvas.style.display = "block";
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const padding = 60;
+  const width = canvas.width - 2 * padding;
+  const height = canvas.height - 2 * padding;
+
+  const stepY = sequence.length > 1 
+      ? height / (sequence.length - 1) 
+      : 0;
+
+  // ===== DRAW AXES =====
+  ctx.strokeStyle = "#000000";   // BLACK AXIS
+  ctx.lineWidth = 1.5;
+
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + height); // Y axis
+  ctx.lineTo(padding + width, padding + height); // X axis
+  ctx.stroke();
+
+  // ===== DRAW X AXIS NUMBERS =====
+  ctx.fillStyle = "#000000";
+  ctx.font = "12px Arial";
+
+  for (let i = 0; i <= diskSize; i += 20) {
+    let x = padding + (i / diskSize) * width;
+    ctx.fillText(i, x - 10, padding + height + 20);
+
+    ctx.beginPath();
+    ctx.moveTo(x, padding + height - 5);
+    ctx.lineTo(x, padding + height + 5);
+    ctx.stroke();
+  }
+
+  // ===== DRAW HEAD MOVEMENT LINE =====
+  ctx.beginPath();
+  ctx.strokeStyle = "#0077cc";
+  ctx.lineWidth = 2;
+
+  sequence.forEach((track, i) => {
+    const x = padding + (track / diskSize) * width;
+    const y = padding + height - i * stepY;
+
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+
+  ctx.stroke();
+
+  // ===== DRAW POINTS =====
+  sequence.forEach((track, i) => {
+    const x = padding + (track / diskSize) * width;
+    const y = padding + height - i * stepY;
+
+    ctx.beginPath();
+    ctx.fillStyle = "#ff0000";
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+
+  // ===== AXIS LABELS =====
+  ctx.fillStyle = "#000000";
+  ctx.font = "14px Arial";
+  ctx.fillText("Track Number →", canvas.width / 2 - 50, canvas.height - 10);
+
+  ctx.save();
+  ctx.translate(20, canvas.height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("Order of Requests →", 0, 0);
+  ctx.restore();
+}
+
+function toggleDiskSize(){
+  const algo = document.getElementById("algo").value;
+  const sizeGroup = document.getElementById("sizeGroup");
+
+  if(algo === "SCAN" || algo === "CSCAN"){
+    sizeGroup.style.display = "flex";
+  } else {
+    sizeGroup.style.display = "none";
+  }
+}
+ const definitions = {
+
+  FCFS: `
+  <b>FCFS (First Come First Serve):</b><br>
+  The disk head services requests in the exact order they arrive in the queue.
+  There is no optimization of seek time. It is simple but may cause large head movement.
+  `,
+
+  SSTF: `
+  <b>SSTF (Shortest Seek Time First):</b><br>
+  The disk head selects the request closest to its current position.
+  This reduces total seek time but may cause starvation of far requests.
+  `,
+
+  SCAN: `
+  <b>SCAN (Elevator Algorithm):</b><br>
+  The disk head moves in one direction servicing requests until it reaches
+  the end of the disk, then reverses direction and continues servicing.
+  `,
+
+  CSCAN: `
+  <b>C-SCAN (Circular SCAN):</b><br>
+  The disk head moves in one direction servicing requests.
+  After reaching the end, it jumps back to the beginning without servicing
+  requests during the return.
+  `
+};
+
+function calculateStepsAnimated(sequence) {
+
+  let container = document.getElementById("result");
+  container.innerHTML = "<b>Step-by-Step Head Movement:</b><br><br>";
+  container.style.display = "block";
+
+  let total = 0;
+  let i = 1;
+
+  function showStep() {
+
+    if (i >= sequence.length) {
+      showFinal();
+      return;
+    }
+
+    let from = sequence[i - 1];
+    let to = sequence[i];
+    let diff = Math.abs(to - from);
+    total += diff;
+
+    let stepDiv = document.createElement("div");
+    stepDiv.style.padding = "15px";
+    stepDiv.style.marginBottom = "12px";
+    stepDiv.style.borderRadius = "12px";
+    stepDiv.style.background = "rgba(255,255,255,0.05)";
+    stepDiv.style.border = "1px solid rgba(56,189,248,0.2)";
+    stepDiv.style.display = "flex";
+    stepDiv.style.justifyContent = "space-between";
+    stepDiv.style.alignItems = "center";
+    stepDiv.style.opacity = "0";
+    stepDiv.style.transform = "translateY(15px)";
+    stepDiv.style.transition = "all 0.4s ease";
+
+    stepDiv.innerHTML = `
+      <span>Track Move from <b>${from}</b> to <b>${to}</b></span>
+      <span><b>Distance: ${diff}</b> (${from} → ${to})</span>
+    `;
+
+    container.appendChild(stepDiv);
+
+    // trigger animation
+    setTimeout(() => {
+      stepDiv.style.opacity = "1";
+      stepDiv.style.transform = "translateY(0)";
+    }, 50);
+
+    i++;
+    setTimeout(showStep, 500); // speed of animation
+  }
+
+  function showFinal() {
+
+  let requestCount = sequence.length - 1;
+  let avg = total / requestCount;
+
+  // Build addition steps dynamically
+  let additions = [];
+  for (let j = 1; j < sequence.length; j++) {
+    let diff = Math.abs(sequence[j] - sequence[j - 1]);
+    additions.push(diff);
+  }
+
+  let additionString = additions.join(" + ");
+
+  let finalDiv = document.createElement("div");
+  finalDiv.style.padding = "20px";
+  finalDiv.style.borderRadius = "14px";
+  finalDiv.style.marginTop = "15px";
+  finalDiv.style.background = "linear-gradient(90deg,#3b82f6,#6366f1)";
+  finalDiv.style.color = "white";
+  finalDiv.style.fontWeight = "600";
+  finalDiv.style.opacity = "0";
+  finalDiv.style.transition = "opacity 0.6s ease";
+
+  finalDiv.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <b>Total Head Movement Calculation:</b><br>
+      ${additionString} = ${total}
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <b>Average Seek Time Calculation:</b><br>
+      ${total} / ${requestCount} = ${avg.toFixed(2)}
+    </div>
+
+    <b>Total Head Movement = ${total} tracks</b><br>
+    <b>Average Seek Time = ${avg.toFixed(2)}</b>
+  `;
+
+  container.appendChild(finalDiv);
+
+  setTimeout(() => {
+    finalDiv.style.opacity = "1";
+  }, 100);
+}
+
+  showStep();
+}
+
+function run(){
+
+  const queueInput = document.getElementById("queue").value;
+  const headInput = document.getElementById("head").value;
+  const algo = document.getElementById("algo").value;
+
+  if (!queueInput || !headInput) {
+    alert("Please enter both queue and head position.");
+    return;
+  }
+
+  const q = queueInput.split(",").map(x => Number(x.trim()));
+
+  if (q.some(isNaN)) {
+    alert("Request queue must contain only numbers separated by commas.");
+    return;
+  }
+
+  const h = Number(headInput);
+
+  if (isNaN(h)) {
+    alert("Head position must be a valid number.");
+    return;
+  }
+
+  let r;
+const size = Number(document.getElementById("size").value) || 200;
+
+// calculate result
+if(algo==="FCFS") r=fcfs(q,h);
+if(algo==="SSTF") r=sstf(q,h);
+if(algo==="SCAN") r=scan(q,h,size);
+if(algo==="CSCAN") r=cscan(q,h,size);
+
+document.getElementById("chart").style.display = "block";
+document.getElementById("interpretationBox").style.display = "block";
+document.getElementById("result").style.display = "block";
+
+//  draw chart
+drawChart(r.seq, size);
+
+interpretationBox.innerHTML = `
+${definitions[algo]}
+
+<br><br>
+
+<b>Graph Interpretation:</b><br><br>
+
+• X-axis shows disk track numbers.<br>
+• Y-axis shows the order of servicing requests.<br>
+• Each line segment shows movement of disk head.<br>
+• More zig-zag movement = more seek time.<br>
+• Total Head Movement = The total head movement in disk scheduling refers to the total distance the disk arm (or read/write head) travels while servicing all the disk I/O requests in a queue.<br>
+`;
+
+  let avg = r.t / q.length;
+
+  calculateStepsAnimated(r.seq);
+
+setTimeout(() => {
+  document.getElementById("result").innerHTML +=
+    `<br><br><b>Seek Sequence:</b> ${r.seq.join(" → ")}`;
+}, r.seq.length * 500);
+
+   // ===== Complexity Section =====
+const complexity={
+  FCFS:["O(n)","O(1)"],
+  SSTF:["O(n²)","O(n)"],
+  SCAN:["O(n log n)","O(n)"],
+  CSCAN:["O(n log n)","O(n)"]
+};
+
+document.getElementById("compTitle").style.display="block";
+document.getElementById("compTable").style.display="table";
+document.getElementById("compRow").innerHTML =
+  `<td>${algo}</td>
+   <td>${complexity[algo][0]}</td>
+   <td>${complexity[algo][1]}</td>`;
+
+}
+
+const canvasParticles = document.getElementById("particles");
+const ctxParticles = canvasParticles.getContext("2d");
+
+function resizeCanvas() {
+  canvasParticles.width = document.documentElement.clientWidth;
+  canvasParticles.height = document.documentElement.clientHeight;
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+let particlesArray = [];
+const numberOfParticles = 100;
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvasParticles.width;
+    this.y = Math.random() * canvasParticles.height;
+    this.size = Math.random() * 2 + 1;
+    this.speedX = (Math.random() - 0.5) * 0.5;
+    this.speedY = (Math.random() - 0.5) * 0.5;
+  }
+
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+
+    if (this.x < 0 || this.x > canvasParticles.width)
+      this.speedX *= -1;
+    if (this.y < 0 || this.y > canvasParticles.height)
+      this.speedY *= -1;
+  }
+
+  draw() {
+    ctxParticles.fillStyle = "rgba(56,189,248,0.5)";
+    ctxParticles.beginPath();
+    ctxParticles.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctxParticles.fill();
+  }
+}
+
+function initParticles() {
+  particlesArray = [];
+  for (let i = 0; i < numberOfParticles; i++) {
+    particlesArray.push(new Particle());
+  }
+}
+
+function animateParticles() {
+  ctxParticles.clearRect(0, 0, canvasParticles.width, canvasParticles.height);
+  particlesArray.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  requestAnimationFrame(animateParticles);
+}
+
+initParticles();
+animateParticles();
+
+</script>
+
+</body>
+</html>
