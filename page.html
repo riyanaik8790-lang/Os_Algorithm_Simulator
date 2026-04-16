@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Page Replacement Simulator</title>
+<title>Memory Optimization Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -385,14 +385,12 @@ body > h1 {
 
 <div class="animated-bg" id="bg">
 
-  <h1>Page Replacement Simulator</h1>
+  <h1>Memory Optimization Simulator</h1>
 
   <div class="info-section">
-  <h2>What is Page Replacement?</h2>
+  <h2>What is Memory Optimization?</h2>
   <p>
-    Page Replacement is a memory management technique used by the Operating System 
-    to decide which page should be removed from memory when new pages need to be loaded.
-    It helps improve memory utilization and reduce page faults.
+    The OS manages how memory (RAM) is allocated and freed for processes.
   </p>
 </div>
 
@@ -408,11 +406,11 @@ body > h1 {
       Example: <code>3</code>
     </li>
     <li>
-      Select a <b>Page Replacement Algorithm</b>:
+      Select any <b>Algorithm</b>:
     </li>
-    <li>Click <b>Run Simulation</b>.</li>
+    <li>Click <b>Start Simulation</b>.</li>
     <li>
-      Click <b>Restart</b> to clear inputs and run again.
+      Click <b>Clear Simulation</b> to clear inputs and run again.
     </li>
   </ol>
 </div>
@@ -440,14 +438,14 @@ body > h1 {
 
     <div class="button-row">
       <div class="button-group">
-  <button onclick="run()">Run Simulation</button>
+  <button onclick="run()">Start Simulation</button>
   <button onclick="restart()" style="
   background: transparent;
   border: 1.5px solid #38bdf8;
   color: #38bdf8;
   box-shadow: 0 0 12px rgba(56,189,248,0.25);
 ">
-    Restart
+    Clear Simulation
   </button>
   <button onclick="loadExample()" style="
    background:linear-gradient(90deg,#10b981,#06b6d4);
