@@ -28,14 +28,10 @@ body{
       #03060d 70%,
       #010308 100%
   );
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  padding:60px 20px 0 20px;
+  margin:0;
+  padding:60px 0 0 0;
   color:#e2e8f0;
   overflow-x:hidden;
-  overflow-y:auto;
-  position:relative;
 }
 
 /* ===== NEW ANIMATED BACKGROUND ===== */
@@ -72,14 +68,14 @@ body{
 
 .container{
   width:100%;
-  max-width:1000px;
-  margin: 0 auto;   /* centers horizontally */
+  max-width:100%;
+  margin:0 auto;
   display:flex;
   flex-direction:column;
   gap:35px;
   position:relative;
   z-index:2;
-  padding: 0 40px;
+  padding:0 20px;
 }
 
 h1{
@@ -93,7 +89,7 @@ h1{
 
 .info-box{
   width: 100%;
-  max-width: 1600px;
+  max-width: 100%;
   background: rgba(15,23,42,0.6);
   border: 1px solid rgba(56,189,248,0.25);
   backdrop-filter: blur(18px);
@@ -102,6 +98,13 @@ h1{
   box-shadow: 0 15px 40px rgba(0,0,0,0.5);
   line-height: 1.6;
   font-size: 14px; 
+}
+
+.card,
+.info-box,
+.how-to-use,
+.result{
+  width:100%;
 }
 
 .card{
@@ -293,7 +296,7 @@ The OS manages input/output operations, especially disk access.
     <li>Enter the disk request sequence (comma separated values).</li>
     <li>Enter the initial head position.</li>
     <li>Select the scheduling algorithm (FCFS, SSTF, SCAN, etc.).</li>
-    <li>Click the <b>Run</b> button.</li>
+    <li>Click the <b>Start Simulation</b> button.</li>
     <li>View the graph and results below.</li>
   </ol>
 </div>

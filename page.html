@@ -6,19 +6,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* ================= MODERN TECH-GLASS UI ================= */
+  * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+/* ================= MODERN TECH-GLASS UI ======f=========== */
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #e0e0e0;
   background: #0d1117;
+  overflow-x:hidden;
 }
 
 /* ================= FLOWING BACKGROUND ================= */
 .animated-bg {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
+  position:relative;
+  min-height:100vh;
+  width:100%;
+  overflow:hidden;
+  padding:16px 20px;
 }
 
 /* Floating particles */
@@ -61,9 +75,10 @@ body {
 
 /* ================= CONTAINER ================= */
 .container {
-  max-width: 1000px;
-  margin: 50px auto;
-  padding: 40px 35px;
+  width:100%;
+  max-width:100%;
+  margin:30px auto;
+  padding:40px 25px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -251,8 +266,10 @@ select option {
 }
 
 .info-section {
-  max-width: 1100px;
-  margin: 30px auto;
+ width:100%;
+  max-width:100%;
+  margin:20px auto;
+  padding:30px 25px;
   padding: 30px;
   border-radius: 18px;
   background: linear-gradient(145deg, #0f1b2d, #0a1624);
@@ -278,8 +295,9 @@ body > h1 {
 }
 
 .container {
-  max-width: 1080px;
-  margin: 50px auto;
+ width:100%;
+  max-width:100%;
+  margin:30px auto;
 }
 
 .interpretation {
