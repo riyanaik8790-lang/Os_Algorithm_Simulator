@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>I/O Optimization Simulator</title>
+<title>Disk Scheduling Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
  
@@ -28,54 +28,35 @@ body{
       #03060d 70%,
       #010308 100%
   );
-  margin:0;
-  padding:60px 0 0 0;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:60px 20px 0 20px;
   color:#e2e8f0;
   overflow-x:hidden;
+  overflow-y:auto;
+  position:relative;
 }
 
-/* ===== NEW ANIMATED BACKGROUND ===== */
-.animated-bg {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-}
-
-/* glowing particles */
-.particle {
+#particles{
   position: fixed;
-  width: 3px;
-  height: 3px;
-  background: rgba(88,166,255,1);
-  border-radius: 50%;
-  box-shadow: 0 0 18px rgba(88,166,255,1);
-  animation: roam linear infinite;
-  z-index: 1;
-  opacity: 0.6;
-}
-
-@keyframes roam {
-  0% { transform: translate(0, 0); opacity: 0; }
-  50% { opacity: 1; }
-  100% { 
-    transform: translate(
-      calc(-200px + 400px * var(--x)), 
-      calc(-200px + 400px * var(--y))
-    ); 
-    opacity: 0; 
-  }
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
 }
 
 .container{
   width:100%;
-  max-width:100%;
-  margin:0 auto;
+  max-width:1000px;
   display:flex;
   flex-direction:column;
   gap:35px;
   position:relative;
   z-index:2;
-  padding:0 20px;
+  padding: 0 40px;   
 }
 
 h1{
@@ -89,7 +70,7 @@ h1{
 
 .info-box{
   width: 100%;
-  max-width: 100%;
+  max-width: 1600px;
   background: rgba(15,23,42,0.6);
   border: 1px solid rgba(56,189,248,0.25);
   backdrop-filter: blur(18px);
@@ -98,13 +79,6 @@ h1{
   box-shadow: 0 15px 40px rgba(0,0,0,0.5);
   line-height: 1.6;
   font-size: 14px; 
-}
-
-.card,
-.info-box,
-.how-to-use,
-.result{
-  width:100%;
 }
 
 .card{
@@ -278,15 +252,22 @@ canvas{
 </style>
 </head>
 <body>
-<div class="animated-bg" id="bg">
+<canvas id="particles"></canvas>
 
 <div class="container">
- <h1>I/O Optimization Simulator</h1>
+ <h1>Disk Scheduling Simulator</h1>
 
 <div class="info-box">
-<h2 class="info-title">What is I/O Optimization?</h2>
+<h2 class="info-title">What is Disk Scheduling?</h2>
 
-The OS manages input/output operations, especially disk access.
+Disk Scheduling is an Operating System mechanism used to decide the order 
+in which pending disk I/O requests are serviced. Since the time required 
+to access data on a disk largely depends on the movement of the disk head, 
+efficient scheduling is essential to reduce seek time, minimize latency, 
+and improve overall system performance. 
+
+Different disk scheduling algorithms apply different strategies to optimize 
+head movement, ensure fairness, and maximize throughput.
 </div>
 
 <div class="how-to-use">
@@ -296,7 +277,7 @@ The OS manages input/output operations, especially disk access.
     <li>Enter the disk request sequence (comma separated values).</li>
     <li>Enter the initial head position.</li>
     <li>Select the scheduling algorithm (FCFS, SSTF, SCAN, etc.).</li>
-    <li>Click the <b>Start Simulation</b> button.</li>
+    <li>Click the <b>Run</b> button.</li>
     <li>View the graph and results below.</li>
   </ol>
 </div>
@@ -329,8 +310,8 @@ The OS manages input/output operations, especially disk access.
   </div>
 
 <div class="button-group">
-  <button class="run-btn" onclick="run()">Start Simulation</button>
-  <button class="restart-btn" onclick="location.reload()">Clear Simulation</button>
+  <button class="run-btn" onclick="run()">Run Simulation</button>
+  <button class="restart-btn" onclick="location.reload()">Restart</button>
   <button class="example-btn" onclick="loadExample()">Load Example</button>
 </div>
 
@@ -359,8 +340,8 @@ The OS manages input/output operations, especially disk access.
 </table>
 
 <div class="result" id="complexity" style="display:none;"></div>
-</div>
-</div>
+
+
 <script>
 // ================= DISK ALGO WITH SEEK SEQUENCE =================
 function fcfs(q,h){
@@ -719,23 +700,65 @@ document.getElementById("compRow").innerHTML =
 
 }
 
-/* ===== FLOATING PARTICLES (MATCHING MEMORY SIMULATOR) ===== */
-const bg = document.getElementById("bg");
+const canvasParticles = document.getElementById("particles");
+const ctxParticles = canvasParticles.getContext("2d");
 
-for (let i = 0; i < 40; i++) {
-  const p = document.createElement("div");
-  p.className = "particle";
-
-  p.style.top = Math.random() * 100 + "vh";
-  p.style.left = Math.random() * 100 + "vw";
-
-  p.style.setProperty("--x", Math.random());
-  p.style.setProperty("--y", Math.random());
-
-  p.style.animationDuration = 10 + Math.random() * 20 + "s";
-
-  bg.appendChild(p);
+function resizeCanvas() {
+  canvasParticles.width = document.documentElement.clientWidth;
+  canvasParticles.height = document.documentElement.clientHeight;
 }
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+let particlesArray = [];
+const numberOfParticles = 100;
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvasParticles.width;
+    this.y = Math.random() * canvasParticles.height;
+    this.size = Math.random() * 2 + 1;
+    this.speedX = (Math.random() - 0.5) * 0.5;
+    this.speedY = (Math.random() - 0.5) * 0.5;
+  }
+
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+
+    if (this.x < 0 || this.x > canvasParticles.width)
+      this.speedX *= -1;
+    if (this.y < 0 || this.y > canvasParticles.height)
+      this.speedY *= -1;
+  }
+
+  draw() {
+    ctxParticles.fillStyle = "rgba(56,189,248,0.5)";
+    ctxParticles.beginPath();
+    ctxParticles.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctxParticles.fill();
+  }
+}
+
+function initParticles() {
+  particlesArray = [];
+  for (let i = 0; i < numberOfParticles; i++) {
+    particlesArray.push(new Particle());
+  }
+}
+
+function animateParticles() {
+  ctxParticles.clearRect(0, 0, canvasParticles.width, canvasParticles.height);
+  particlesArray.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  requestAnimationFrame(animateParticles);
+}
+
+initParticles();
+animateParticles();
 
 </script>
 

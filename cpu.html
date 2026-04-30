@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Process Management Simulator</title>
+<title>CPU Scheduling Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,11 +42,11 @@ body {
 }
 
 /* ================= FLOWING CPU SIGNAL ANIMATED BACKGROUND ================= */
-.animated-bg{
-  position:relative;
-  min-height:100vh;
-  width:100%;
-  overflow:hidden;
+.animated-bg {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #0d1117;
 }
 
 /* Primary moving gradient layer */
@@ -350,12 +350,14 @@ select, #qt {
 <body>
 <div class="animated-bg">
   <div class="content">
-<h1>Process Management Simulator</h1>
+<h1>CPU Scheduling Simulator</h1>
 
 <div class="card">
-  <h2>What is Process management?</h2>
+  <h2>What is CPU Scheduling?</h2>
   <p style="color:#9ba3b4;font-size:14px;">
-    How the computer decides which program (process) runs first, and how long it runs.
+    CPU Scheduling is a process used by the Operating System to decide 
+    which process gets the CPU next. Since only one process can use the 
+    CPU at a time, scheduling algorithms ensure fairness and efficiency.
   </p>
 </div>
 
@@ -371,7 +373,7 @@ select, #qt {
     <li>Higher=Higher represents larger number → higher priority </li> 
     </ul>
      <li><strong>Optional:</strong> Hybrid scheduling (multiple algorithms in one simulation) is not active by default. It will be available if the user selects the "Hybrid Mode" option.</li>
-    <li>Click Start Simulation.</li>
+    <li>Click Run Simulation.</li>
   </ul>
 </div>
 
@@ -402,9 +404,9 @@ select, #qt {
   </table>
 
   <div id="processButtons">
-    <button onclick="addProcess()">Create Process</button>
-    <button onclick="removeProcess()">End Process</button>
-    <button id="resetBtn" onclick="resetPage()">Clear Simulation</button>
+    <button onclick="addProcess()">Add Process</button>
+    <button onclick="removeProcess()">Remove Process</button>
+    <button id="resetBtn" onclick="resetPage()">Reset</button>
     <button onclick="loadExample()">Load Example</button>
   </div>
 
@@ -439,7 +441,7 @@ select, #qt {
   </label>
 </div>
 
-  <button onclick="run()">Start Simulation</button>
+  <button onclick="run()">Run Simulation</button>
 
 </div>
 
@@ -859,7 +861,7 @@ function calc(p, c){
   let sumTAT = 0, sumWT = 0, sumRT = 0;
 
   result.innerHTML =
-    "<tr><th>Process</th><th>Completion Time</th><th>Turn Around Time</th><th>Waiting Time</th><th>Response Time</th></tr>";
+    "<tr><th>Process</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>";
 
   [...p].sort((a, b) => a.pid - b.pid).forEach(x => {
 

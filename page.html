@@ -2,37 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Memory Optimization Simulator</title>
+<title>Page Replacement Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-  * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-/* ================= MODERN TECH-GLASS UI ======f=========== */
+/* ================= MODERN TECH-GLASS UI ================= */
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #e0e0e0;
   background: #0d1117;
-  overflow-x:hidden;
 }
 
 /* ================= FLOWING BACKGROUND ================= */
 .animated-bg {
-  position:relative;
-  min-height:100vh;
-  width:100%;
-  overflow:hidden;
-  padding:16px 20px;
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 /* Floating particles */
@@ -75,10 +61,9 @@ body {
 
 /* ================= CONTAINER ================= */
 .container {
-  width:100%;
-  max-width:100%;
-  margin:30px auto;
-  padding:40px 25px;
+  max-width: 1000px;
+  margin: 50px auto;
+  padding: 40px 35px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -266,10 +251,8 @@ select option {
 }
 
 .info-section {
- width:100%;
-  max-width:100%;
-  margin:20px auto;
-  padding:30px 25px;
+  max-width: 1100px;
+  margin: 30px auto;
   padding: 30px;
   border-radius: 18px;
   background: linear-gradient(145deg, #0f1b2d, #0a1624);
@@ -295,9 +278,8 @@ body > h1 {
 }
 
 .container {
- width:100%;
-  max-width:100%;
-  margin:30px auto;
+  max-width: 1080px;
+  margin: 50px auto;
 }
 
 .interpretation {
@@ -403,12 +385,14 @@ body > h1 {
 
 <div class="animated-bg" id="bg">
 
-  <h1>Memory Optimization Simulator</h1>
+  <h1>Page Replacement Simulator</h1>
 
   <div class="info-section">
-  <h2>What is Memory Optimization?</h2>
+  <h2>What is Page Replacement?</h2>
   <p>
-    The OS manages how memory (RAM) is allocated and freed for processes.
+    Page Replacement is a memory management technique used by the Operating System 
+    to decide which page should be removed from memory when new pages need to be loaded.
+    It helps improve memory utilization and reduce page faults.
   </p>
 </div>
 
@@ -424,11 +408,11 @@ body > h1 {
       Example: <code>3</code>
     </li>
     <li>
-      Select any <b>Algorithm</b>:
+      Select a <b>Page Replacement Algorithm</b>:
     </li>
-    <li>Click <b>Start Simulation</b>.</li>
+    <li>Click <b>Run Simulation</b>.</li>
     <li>
-      Click <b>Clear Simulation</b> to clear inputs and run again.
+      Click <b>Restart</b> to clear inputs and run again.
     </li>
   </ol>
 </div>
@@ -456,14 +440,14 @@ body > h1 {
 
     <div class="button-row">
       <div class="button-group">
-  <button onclick="run()">Start Simulation</button>
+  <button onclick="run()">Run Simulation</button>
   <button onclick="restart()" style="
   background: transparent;
   border: 1.5px solid #38bdf8;
   color: #38bdf8;
   box-shadow: 0 0 12px rgba(56,189,248,0.25);
 ">
-    Clear Simulation
+    Restart
   </button>
   <button onclick="loadExample()" style="
    background:linear-gradient(90deg,#10b981,#06b6d4);
