@@ -1643,7 +1643,36 @@ if (a === "HYBRID") {
   }
 
   // ---------- ALGORITHM EXECUTION ----------
-  if(a=="FCFS") c = fcfs(p);
+  if(a=="FCFS"){
+  fetch("http://localhost:3000/fcfs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(p)
+  })
+  .then(res => res.json())
+  .then(data => {
+    c = data;
+
+    draw(c);
+    explainGantt(c, a);
+    calc(p, c);
+    explainResults();
+    calculateExtraMetrics(p, c);
+    buildPerfData(p, c);
+    showWT();
+    showComp(a);
+    showAlgorithmDefinition(a);
+
+    document.getElementById("ganttCard").style.display = "block";
+    document.getElementById("resultCard").style.display = "block";
+    document.getElementById("complexityCard").style.display = "block";
+  });
+
+  return;
+}
+
   if(a=="SJF")  c = sjf(p);
   if(a=="SRTN") c = srtn(p);
 

@@ -1,0 +1,25 @@
+{
+  "name": "os_algorithm_simulator",
+  "version": "1.0.0",
+  "description": "An interactive web-based simulator for Operating System algorithms with graphical visualization and step-by-step calculations.",
+  "main": "node.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riyanaik8790-lang/Os_Algorithm_Simulator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/riyanaik8790-lang/Os_Algorithm_Simulator/issues"
+  },
+  "homepage": "https://github.com/riyanaik8790-lang/Os_Algorithm_Simulator#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
